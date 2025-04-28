@@ -1,0 +1,33 @@
+version: "3"
+services:
+  mysql:
+    image: ${CORDYS_IMAGE_PREFIX}/mysql:8.0.38
+    container_name: mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${CORDYS_MYSQL_PASSWORD}"]
+      interval: 6s
+      timeout: 5s
+      retries: 50
+    environment:
+      MYSQL_DATABASE: ${CORDYS_MYSQL_DB}
+      MYSQL_ROOT_PASSWORD: ${CORDYS_MYSQL_PASSWORD}
+      TZ: "Asia/Shanghai"
+    ports:
+      - ${CORDYS_MYSQL_PORT}:3306
+    volumes:
+      - ${CORDYS_BASE}/cordys/conf/my.cnf:/etc/mysql/conf.d/my.cnf
+      - cordys-mysql-data:/var/lib/mysql
+    networks:
+      - ms-network
+    restart: always
+  cordys:
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+volumes:
+  cordys-mysql-data:
+    driver_opts:
+      type: none
+      device: ${CORDYS_BASE}/cordys/data/mysql
+      o: bind

@@ -1,0 +1,32 @@
+version: "3"
+services:
+  redis:
+    image: ${CORDYS_IMAGE_PREFIX}/redis:7.2.7-alpine
+    container_name: redis
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 6s
+      timeout: 5s
+      retries: 50
+    environment:
+      TZ: "Asia/Shanghai"
+    ports:
+      - ${CORDYS_REDIS_PORT}:6379
+    volumes:
+      - ${CORDYS_BASE}/cordys/conf/redis.conf:/etc/redis/redis.conf
+      - ms-redis-data:/data
+    command: redis-server /etc/redis/redis.conf --requirepass ${CORDYS_REDIS_PASSWORD}
+    networks:
+      - ms-network
+    restart: always
+  cordys:
+    depends_on:
+      redis:
+        condition: service_healthy
+
+volumes:
+  ms-redis-data:
+    driver_opts:
+      type: none
+      device: ${CORDYS_BASE}/cordys/data/redis
+      o: bind

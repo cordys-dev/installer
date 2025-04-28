@@ -1,0 +1,35 @@
+version: "3"
+services:
+  cordys-crm:
+    image: ${CORDYS_IMAGE_PREFIX}/cordys-crm-ce:${CORDYS_IMAGE_TAG}
+    container_name: cordys-crm
+    deploy:
+      resources:
+        limits:
+          memory: ${CORDYS_MEM_LIMIT}
+    entrypoint: 
+      - sh
+      - -c
+      - |
+        sh /shells/cordys-crm.sh
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://${CORDYS_MYSQL_HOST}:${CORDYS_MYSQL_PORT}/${CORDYS_MYSQL_DB}?autoReconnect=false&useUnicode=true&characterEncoding=UTF-8&characterSetResults=UTF-8&zeroDateTimeBehavior=convertToNull&allowPublicKeyRetrieval=true&useSSL=false&sessionVariables=sql_mode=%27STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION%27
+      SPRING_DATASOURCE_USERNAME: ${CORDYS_MYSQL_USER}
+      SPRING_DATASOURCE_PASSWORD: ${CORDYS_MYSQL_PASSWORD}
+      SPRING_SESSION_TIMEOUT: '30d'
+      REDIS_HOST: ${CORDYS_REDIS_HOST}
+      REDIS_PORT: ${CORDYS_REDIS_PORT}
+      REDIS_PASSWORD: ${CORDYS_REDIS_PASSWORD}
+    ports:
+      - ${CORDYS_SERVER_PORT}:8081
+    healthcheck:
+      test: [ "CMD", "bash", "-c", "< /dev/tcp/localhost/8081" ]
+      interval: 6s
+      timeout: 10s
+      retries: 50
+    restart: always
+    volumes:
+      - ${CORDYS_BASE}/cordys/conf:/opt/cordys/conf
+      - ${CORDYS_BASE}/cordys/logs/cordys:/opt/cordys/logs/cordys-crm
+    networks:
+      - ms-network
