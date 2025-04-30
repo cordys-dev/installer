@@ -275,12 +275,12 @@ pipeline {
                         cd ..
 
                         # 打包社区版离线安装包
-                        tar --transform "s|^|cordys-crm-ce-online-installer-${RELEASE}/|" \\
-                            -czvf cordys-crm-ce-online-installer-${RELEASE}.tar.gz \\
+                        tar --transform "s|^|cordys-crm-ce-offline-installer-${RELEASE}-${ARCH}/|" \\
+                            -czvf cordys-crm-ce-offline-installer-${RELEASE}-${ARCH}.tar.gz \\
                             docker images -C conf .
 
                         # 生成MD5校验文件
-                        md5sum -b cordys-crm-ce-offline-installer-${RELEASE}.tar.gz | awk '{print \$1}' > cordys-crm-ce-offline-installer-${RELEASE}.tar.gz.md5
+                        md5sum -b cordys-crm-ce-offline-installer-${RELEASE}-${ARCH}.tar.gz | awk '{print \$1}' > cordys-crm-ce-offline-installer-${RELEASE}-${ARCH}.tar.gz.md5
 
                        # 准备企业版镜像
                        rm -rf images && mkdir images && cd images
@@ -292,12 +292,12 @@ pipeline {
                         echo 'CORDYS_ENTERPRISE_ENABLE=true' >> ./conf/install.conf
 
                         # 打包企业版离线安装包
-                        tar --transform "s|^|cordys-crm-ee-online-installer-${RELEASE}/|" \\
-                          -czvf cordys-crm-ee-online-installer-${RELEASE}.tar.gz \\
+                        tar --transform "s|^|cordys-crm-ee-offline-installer-${RELEASE}-${ARCH}/|" \\
+                          -czvf cordys-crm-ee-offline-installer-${RELEASE}-${ARCH}.tar.gz \\
                           docker images -C conf .
 
                         # 生成企业版MD5校验文件
-                        md5sum -b cordys-crm-ee-offline-installer-${RELEASE}.tar.gz | awk '{print \$1}' > cordys-crm-ee-offline-installer-${RELEASE}.tar.gz.md5
+                        md5sum -b cordys-crm-ee-offline-installer-${RELEASE}-${ARCH}.tar.gz | awk '{print \$1}' > cordys-crm-ee-offline-installer-${RELEASE}-${ARCH}.tar.gz.md5
                         rm -rf images conf
                     """
                 }
@@ -313,12 +313,12 @@ pipeline {
                     // 使用OSS凭据上传文件
                     withCredentials([usernamePassword(credentialsId: 'OSSKEY', passwordVariable: 'SK', usernameVariable: 'AK')]) {
                         // 上传社区版离线安装包和MD5文件
-                        sh("java -jar /opt/uploadToOss.jar $AK $SK fit2cloud2-offline-installer cordys/release/cordys-crm-ce-offline-installer-${RELEASE}.tar.gz ./cordys-crm-ce-offline-installer-${RELEASE}.tar.gz")
-                        sh("java -jar /opt/uploadToOss.jar $AK $SK fit2cloud2-offline-installer cordys/release/cordys-crm-ce-offline-installer-${RELEASE}.tar.gz.md5 ./cordys-crm-ce-offline-installer-${RELEASE}.tar.gz.md5")
+                        sh("java -jar /opt/uploadToOss.jar $AK $SK fit2cloud2-offline-installer cordys/release/cordys-crm-ce-offline-installer-${RELEASE}-${ARCH}.tar.gz ./cordys-crm-ce-offline-installer-${RELEASE}-${ARCH}.tar.gz")
+                        sh("java -jar /opt/uploadToOss.jar $AK $SK fit2cloud2-offline-installer cordys/release/cordys-crm-ce-offline-installer-${RELEASE}-${ARCH}.tar.gz.md5 ./cordys-crm-ce-offline-installer-${RELEASE}-${ARCH}.tar.gz.md5")
 
                         // 上传企业版离线安装包和MD5文件
-                        sh("java -jar /opt/uploadToOss.jar $AK $SK fit2cloud2-offline-installer cordys/release/cordys-crm-ee-offline-installer-${RELEASE}.tar.gz ./cordys-crm-ee-offline-installer-${RELEASE}.tar.gz")
-                        sh("java -jar /opt/uploadToOss.jar $AK $SK fit2cloud2-offline-installer cordys/release/cordys-crm-ee-offline-installer-${RELEASE}.tar.gz.md5 ./cordys-crm-ee-offline-installer-${RELEASE}.tar.gz.md5")
+                        sh("java -jar /opt/uploadToOss.jar $AK $SK fit2cloud2-offline-installer cordys/release/cordys-crm-ee-offline-installer-${RELEASE}-${ARCH}.tar.gz ./cordys-crm-ee-offline-installer-${RELEASE}-${ARCH}.tar.gz")
+                        sh("java -jar /opt/uploadToOss.jar $AK $SK fit2cloud2-offline-installer cordys/release/cordys-crm-ee-offline-installer-${RELEASE}-${ARCH}.tar.gz.md5 ./cordys-crm-ee-offline-installer-${RELEASE}-${ARCH}.tar.gz.md5")
                     }
                 }
             }
