@@ -1,161 +1,198 @@
 #!/bin/bash
-# ============================================================
-# CORDYS 安装/升级脚本 (install.sh)
-# 用于在系统中安装或升级 CORDYS 平台，包括 Docker 及 Compose
-# ============================================================
 
-# 获取脚本所在目录
 __current_dir=$(
-   cd "$(dirname "$0")" || exit
+   cd "$(dirname "$0")"
    pwd
 )
-# 转发所有参数
-args="$@"
-# 操作系统信息
-__os=$(uname -a)
+args=$@
+__os=`uname -a`
 
-# 日志函数：输出信息并追加到安装日志
 function log() {
-   local message="[CORDYS Log]: $1"
-   echo -e "${message}" 2>&1 | tee -a "${__current_dir}/install.log"
+   message="[CORDYS CRM Log]: $1 "
+   echo -e "${message}" 2>&1 | tee -a ${__current_dir}/install.log
 }
-
-# 环境变量自动导出
 set -a
-# 获取本机 IP
-__local_ip=$(hostname -I | cut -d" " -f1)
-# 加载安装配置
-source "${__current_dir}/install.conf"
+__local_ip=$(hostname -I|cut -d" " -f 1)
+source ${__current_dir}/install.conf
 
-# 判断安装类型（install 或 upgrade）
 export INSTALL_TYPE='install'
-if [ -f ~/.cordysrc ]; then
+if [ -f ~/.cordysrc ];then
   source ~/.cordysrc > /dev/null
-  echo "检测到已安装 CORDYS，安装目录 ${CORDYS_BASE}/cordys，执行升级流程"
+  echo "存在已安装的 CORDYS CRM, 安装目录为 ${CORDYS_BASE}/cordys, 执行升级流程"
   INSTALL_TYPE='upgrade'
-elif [ -f /usr/local/bin/crmctl ]; then
-  CORDYS_BASE=$(grep -oP '(?<=CORDYS_BASE=).*' /usr/local/bin/crmctl)
-  echo "检测到已安装 CORDYS，安装目录 ${CORDYS_BASE}/cordys，执行升级流程"
+elif [ -f /usr/local/bin/crmctl ];then
+  CORDYS_BASE=$(cat /usr/local/bin/crmctl | grep CORDYS_BASE= | awk -F= '{print $2}' 2>/dev/null)
+  echo "存在已安装的 CORDYS CRM, 安装目录为 ${CORDYS_BASE}/cordys, 执行升级流程"
   INSTALL_TYPE='upgrade'
 else
-  CORDYS_BASE=$(grep -oP '(?<=CORDYS_BASE=).*' "${__current_dir}/install.conf")
-  echo "安装目录为 ${CORDYS_BASE}/cordys，开始新安装"
+  CORDYS_BASE=$(cat ${__current_dir}/install.conf | grep CORDYS_BASE= | awk -F= '{print $2}' 2>/dev/null)
+  echo "安装目录为 ${CORDYS_BASE}/cordys, 开始进行安装"
   INSTALL_TYPE='install'
 fi
+set +a
 
-# 读取当前与目标版本，转换为可比较数字格式
-__current_version=$(cat "${CORDYS_BASE}/cordys/version" 2>/dev/null || echo "")
-__target_version=$(cat "${__current_dir}/cordys/version")
-current_version="${__current_version#v}"
-target_version="${__target_version#v}"
+__current_version=$(cat ${CORDYS_BASE}/cordys/version 2>/dev/null || echo "")
+__target_version=$(cat ${__current_dir}/cordys/version)
+# 截取实际版本
+current_version=${__current_version%-*}
+current_version=${current_version:1}
+current_version_arr=(`echo $current_version | tr '.' ' '`)
 
-IFS='.' read -r -a current_parts <<< "$current_version"
-IFS='.' read -r -a target_parts <<< "$target_version"
-current_numeric=$(printf '1%02d%02d%02d' "${current_parts[@]}")
-target_numeric=$(printf '1%02d%02d%02d' "${target_parts[@]}")
+target_version=${__target_version%-*}
+target_version=${target_version:1}
+target_version_arr=(`echo $target_version | tr '.' ' '`)
 
-# 不支持降级
-if [[ ${current_numeric} -gt ${target_numeric} ]]; then
-  echo -e "\e[31m检测到新版本低于当前版本，不支持降级\e[0m"
-  exit 2
+current_version=$(printf '1%02d%02d%02d' ${current_version_arr[0]} ${current_version_arr[1]} ${current_version_arr[2]})
+target_version=$(printf '1%02d%02d%02d' ${target_version_arr[0]} ${target_version_arr[1]} ${target_version_arr[2]})
+
+
+if [[ ${current_version} > ${target_version} ]]; then
+  echo -e "\e[31m不支持降级\e[0m"
+  return 2
 fi
 
-log "开始拷贝安装文件"
-# 创建目录并复制文件
-mkdir -p "${CORDYS_BASE}/cordys"
-cp -f ./cordys/version "${CORDYS_BASE}/cordys/version"
-cp -rv --suffix="$(date +%Y%m%d-%H%M)" ./cordys "${CORDYS_BASE}/cordys"
+if [[ "${__current_version}" = "v1"* ]] || [[ "${__current_version}" = "v2"* ]]; then
+  if [[ "${__target_version}" = "v3"* ]]; then
+    echo -e "\e[31m不支持升级到此版本\e[0m"
+    return 2
+  fi
+fi
 
-# 保存安装路径
+if [[ ${__current_version} =~ "lts" ]];then
+   if [[ ! ${__target_version} =~ "lts" ]];then
+      log "从LTS版本升级到非LTS版本，此版本包含实验性功能请做好数据备份工作"
+      read -p "是否确认升级? [n/y]" __choice </dev/tty
+      case "$__choice" in
+         y|Y) echo "继续安装...";;
+         n|N) echo "退出安装..."&exit;;
+         *) echo "退出安装..."&exit;;
+      esac
+   fi
+else
+   if [[ $(cat ${__current_dir}/cordys/version) =~ "lts" && ${INSTALL_TYPE} == "upgrade" ]];then
+      log "\e[31m从非LTS版本升级到LTS版本后，后续只能自动升级LTS版本，如升级非LTS版本，需手动升级！\e[0m"
+      read -p "是否确认升级? [n/y]" __choice </dev/tty
+      case "$__choice" in
+         y|Y) echo "继续安装...";;
+         n|N) echo "退出安装..."&exit;;
+         *) echo "退出安装..."&exit;;
+      esac
+   fi
+fi
+
+log "拷贝安装文件到目标目录"
+
+mkdir -p ${CORDYS_BASE}/cordys
+cp -f ./cordys/version ${CORDYS_BASE}/cordys/version
+cp -rv --suffix=.$(date +%Y%m%d-%H%M) ./cordys ${CORDYS_BASE}/
+
+# 记录MeterSphere安装路径
 echo "CORDYS_BASE=${CORDYS_BASE}" > ~/.cordysrc
-# 安装 crmctl 管理脚本
-cp crmctl /usr/local/bin/crmctl && chmod +x /usr/local/bin/crmctl
-ln -sf /usr/local/bin/crmctl /usr/bin/crmctl
+# 安装 crmctl 命令
+cp crmctl /usr/local/bin && chmod +x /usr/local/bin/crmctl
+ln -s /usr/local/bin/crmctl /usr/bin/crmctl 2>/dev/null
 
 log "======================= 开始安装 ======================="
-# 安装 Docker 与 Docker Compose
-
-# 检查 Docker
-if command -v docker >/dev/null; then
-  log "检测到 Docker，跳过安装并启动"
-  service docker start | tee -a "${__current_dir}/install.log"
+#Install docker & docker-compose
+##Install Latest Stable Docker Release
+if which docker >/dev/null; then
+   log "检测到 Docker 已安装，跳过安装步骤"
+   log "启动 Docker "
+   service docker start 2>&1 | tee -a ${__current_dir}/install.log
 else
-  if [[ -d docker ]]; then
-    log "使用离线包安装 Docker"
-    cp docker/bin/* /usr/bin/
-    cp docker/service/docker.service /etc/systemd/system/
-    service docker start | tee -a "${__current_dir}/install.log"
-  else
-    log "在线安装 Docker"
-    curl -fsSL https://resource.fit2cloud.com/get-docker-linux.sh -o get-docker.sh
-    sh get-docker.sh | tee -a "${__current_dir}/install.log"
-    service docker start | tee -a "${__current_dir}/install.log"
-  fi
+   if [[ -d docker ]]; then
+      log "... 离线安装 docker"
+      chmod +x docker/bin/*
+      cp docker/bin/* /usr/bin/
+      cp docker/service/docker.service /etc/systemd/system/
+      chmod 754 /etc/systemd/system/docker.service
+      log "... 启动 docker"
+      service docker start 2>&1 | tee -a ${__current_dir}/install.log
+
+   else
+      log "... 在线安装 docker"
+      curl -fsSL https://resource.fit2cloud.com/get-docker-linux.sh -o get-docker.sh 2>&1 | tee -a ${__current_dir}/install.log
+      sudo sh get-docker.sh 2>&1 | tee -a ${__current_dir}/install.log
+      log "... 启动 docker"
+      service docker start 2>&1 | tee -a ${__current_dir}/install.log
+   fi
+
 fi
 
-# 校验 Docker 运行状态
-if ! docker ps >/dev/null 2>&1; then
-  log "Docker 未正常运行，请检查后重试"
-  exit 1
+# 检查docker服务是否正常运行
+docker ps 1>/dev/null 2>/dev/null
+if [ $? != 0 ];then
+   log "Docker 未正常启动，请先安装并启动 Docker 服务后再次执行本脚本"
+   exit
 fi
 
-# 检查 Docker Compose
-if ! command -v docker-compose >/dev/null; then
-  if [[ -d docker ]]; then
-    log "离线安装 Docker Compose"
-    cp docker/bin/docker-compose /usr/bin/
-    chmod +x /usr/bin/docker-compose
-  else
-    log "在线安装 Docker Compose"
-    curl -L https://resource.fit2cloud.com/docker/compose/releases/download/v2.24.5/docker-compose-"$(uname -s | tr '[:upper:]' '[:lower:]')"-"$(uname -m)" -o /usr/local/bin/docker-compose
-    chmod +x /usr/local/bin/docker-compose
-    ln -sf /usr/local/bin/docker-compose /usr/bin/docker-compose
-  fi
+##Install Latest Stable Docker Compose Release
+if which docker-compose >/dev/null; then
+   log "检测到 Docker Compose 已安装，跳过安装步骤"
+else
+   if [[ -d docker ]]; then
+      log "... 离线安装 docker-compose"
+      cp docker/bin/docker-compose /usr/bin/
+      chmod +x /usr/bin/docker-compose
+   else
+      log "... 在线安装 docker-compose"
+      curl -L https://resource.fit2cloud.com/docker/compose/releases/download/v2.24.5/docker-compose-$(uname -s | tr A-Z a-z)-`uname -m` -o /usr/local/bin/docker-compose 2>&1 | tee -a ${__current_dir}/install.log
+      chmod +x /usr/local/bin/docker-compose
+      ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose
+   fi
 fi
-# 验证 Compose 安装
-if ! docker-compose version >/dev/null 2>&1; then
-  log "docker-compose 安装或运行异常，请检查后重试"
-  exit 1
+# 检查docker-compose是否正常
+docker-compose version 1>/dev/null 2>/dev/null
+if [ $? != 0 ];then
+   log "docker-compose 未正常安装，请先安装 docker-compose 后再次执行本脚本"
+   exit
 fi
 
-# 配置环境变量文件
-cp -f "${__current_dir}/install.conf" "${CORDYS_BASE}/cordys/install.conf.example"
-# 合并及保留用户配置
-source "${__current_dir}/install.conf"
-source ~/.cordysrc >/dev/null
-# 保存镜像标签并生成 .env
-__ms_image_tag="${CORDYS_IMAGE_TAG}"
-env | grep CORDYS_ > "${CORDYS_BASE}/cordys/.env"
-ln -sf "${CORDYS_BASE}/cordys/.env" "${CORDYS_BASE}/cordys/install.conf"
-# 确保主机名解析
-grep -q "127.0.0.1 $(hostname)" /etc/hosts || echo "127.0.0.1 $(hostname)" >> /etc/hosts
+# 将配置信息存储到安装目录的环境变量配置文件中
+echo '' >> ${CORDYS_BASE}/cordys/.env
+cp -f ${__current_dir}/install.conf ${CORDYS_BASE}/cordys/install.conf.example
+# 通过加载环境变量的方式保留已修改的配置项，仅添加新增的配置项
+source ${__current_dir}/install.conf
+source ~/.cordysrc >/dev/null 2>&1
+__cordys_image_tag=${CORDYS_IMAGE_TAG}
+source ${CORDYS_BASE}/cordys/.env
 
-# 生成 Compose 文件并验证配置
+export CORDYS_IMAGE_TAG=${__cordys_image_tag}
+env | grep CORDYS_ > ${CORDYS_BASE}/cordys/.env
+ln -s ${CORDYS_BASE}/cordys/.env ${CORDYS_BASE}/cordys/install.conf 2>/dev/null
+grep "127.0.0.1 $(hostname)" /etc/hosts >/dev/null || echo "127.0.0.1 $(hostname)" >> /etc/hosts
 crmctl generate_compose_files
-crmctl config >/dev/null 2>&1 || { crmctl config; log "配置文件或版本不兼容，请检查 docker-compose 版本或配置"; exit 1; }
+crmctl config 1>/dev/null 2>/dev/null
+if [ $? != 0 ];then
+   crmctl config
+   log "docker-compose 版本与配置文件不兼容或配置文件存在问题，请重新安装最新版本的 docker-compose 或检查配置文件"
+   exit
+fi
 
-# 重定向日志到 install.log 并启用严格模式
-exec > >(tee -a "${__current_dir}/install.log") 2>&1
+exec > >(tee -a ${__current_dir}/install.log) 2>&1
 set -e
 export COMPOSE_HTTP_TIMEOUT=180
-cd "${__current_dir}"
-
-# 加载或拉取镜像
+cd ${__current_dir}
+# 加载镜像
 if [[ -d images ]]; then
-  log "加载本地镜像"
-  for img in images/*; do docker load -i "$img"; done
+   log "加载镜像"
+   for i in $(ls images); do
+      docker load -i images/$i
+   done
 else
-  log "拉取远程镜像"
-  crmctl pull
-  curl -sfL https://resource.fit2cloud.com/installation-log.sh | sh -s ms "${INSTALL_TYPE}" "${CORDYS_IMAGE_TAG}"
+   log "拉取镜像"
+   crmctl pull
+   curl -sfL https://resource.fit2cloud.com/installation-log.sh | sh -s cordys ${INSTALL_TYPE} ${CORDYS_IMAGE_TAG}
+   cd -
 fi
 
-# 启动 CORDYS 服务
 log "启动服务"
 crmctl down -v
 crmctl up -d --remove-orphans
+
 crmctl status
 
 echo -e "======================= 安装完成 =======================\n"
-echo -e "访问方式: http://\$__local_ip:\${CORDYS_SERVER_PORT}\n用户名: admin\n初始密码: CordysCRM"
-echo -e "使用 'crmctl status' 查看服务状态。\n"
+
+echo -e "请通过以下方式访问:\n URL: http://\$LOCAL_IP:${CORDYS_SERVER_PORT}\n 用户名: admin\n 初始密码: cordys"
+echo -e "您可以使用命令 'crmctl status' 检查服务运行情况.\n"

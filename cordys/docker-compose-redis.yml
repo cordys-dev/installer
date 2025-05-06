@@ -17,7 +17,7 @@ services:
       - ms-redis-data:/data
     command: redis-server /etc/redis/redis.conf --requirepass ${CORDYS_REDIS_PASSWORD}
     networks:
-      - ms-network
+      - cordys-network
     restart: always
   cordys:
     depends_on:

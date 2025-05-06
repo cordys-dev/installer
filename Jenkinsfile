@@ -73,7 +73,7 @@ pipeline {
 
                             // 检查社区版工作流状态
                             def ceBuildSuccess = false
-                            timeout(time: 30, unit: 'MINUTES') {
+                            timeout(time: 80, unit: 'MINUTES') {
                                 waitUntil {
                                     sleep(time: 10, unit: 'SECONDS')
                                     def statusJson = sh(script: '''
