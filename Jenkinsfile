@@ -29,6 +29,8 @@ pipeline {
                     // 打印当前版本和分支信息
                     echo "RELEASE=${RELEASE}"
                     echo "BRANCH=${BRANCH}"
+                    echo "ARCH=${ARCH}"
+                    echo "ARCHITECTURE=${ARCHITECTURE}"
                 }
             }
         }
@@ -59,7 +61,7 @@ pipeline {
                                                curl -X POST -H "Authorization: Bearer $TOKEN" \\
                                                     -H "Accept: application/vnd.github.v3+json" \\
                                                     ${ceWorkflowApi} \\
-                                                    -d '{ "ref":"main", "inputs":{"dockerImageTag":"${RELEASE}", "architecture":"linux/amd64,linux/arm64", "registry":"fit2cloud-registry"}}'
+                                                    -d '{ "ref":"main", "inputs":{"dockerImageTag":"${RELEASE}", "architecture":"${ARCHITECTURE}", "registry":"fit2cloud-registry"}}'
                                              """, returnStatus: true)
 
 
@@ -105,7 +107,7 @@ pipeline {
                                                    curl -X POST -H "Authorization: Bearer $TOKEN" \\
                                                         -H "Accept: application/vnd.github.v3+json" \\
                                                         ${eeWorkflowApi} \\
-                                                        -d '{ "ref":"main", "inputs":{"dockerImageTag":"${RELEASE}", "architecture":"linux/amd64,linux/arm64"}}'
+                                                        -d '{ "ref":"main", "inputs":{"dockerImageTag":"${RELEASE}", "architecture":"${ARCHITECTURE}"}}'
                                                  """, returnStatus: true)
                                 if (eeResponse != 0) {
                                     error "企业版镜像构建工作流触发失败"
