@@ -29,40 +29,21 @@ function usage() {
 }
 
 function generate_compose_files() {
-  compose_files="-f docker-compose-base.yml"
-  mkdir -p ${CORDYS_BASE}/cordys/logs/cordys
-  case ${CORDYS_INSTALL_MODE} in
-  allinone)
-    compose_files="${compose_files} -f docker-compose-cordys.yml"
-    ;;
-  server)
-    compose_files="${compose_files} -f docker-compose-cordys.yml"
-    ;;
-  *)
-    log "... 不支持的安装模式，请从 [ allinone | server ] 中进行选择"
-    ;;
-  esac
-  if [ "${CORDYS_INSTALL_MODE}" != "server" ]; then
-    # 是否使用外部数据库
-    if [ "${CORDYS_EXTERNAL_MYSQL}" = "false" ]; then
-      mkdir -p ${CORDYS_BASE}/cordys/data/mysql
-      chmod 655 ${CORDYS_BASE}/cordys/conf/my.cnf
-      compose_files="${compose_files} -f docker-compose-mysql.yml"
-      # 中间件去掉 depends_on
-      if [ "${CORDYS_INSTALL_MODE}" = "middleware" ]; then
-        sed -i -e '/cordys:/,+3d' ${CORDYS_BASE}/cordys/docker-compose-mysql.yml
-      fi
-    fi
-    # 是否使用外部 Redis
-    if [ "${CORDYS_EXTERNAL_REDIS}" = "false" ]; then
-      mkdir -p ${CORDYS_BASE}/cordys/data/redis
-      compose_files="${compose_files} -f docker-compose-redis.yml"
-      if [ "${CORDYS_INSTALL_MODE}" = "middleware" ]; then
-        sed -i -e '/cordys:/,+3d' ${CORDYS_BASE}/cordys/docker-compose-redis.yml
-      fi
-    fi
+  compose_files="-f docker-compose-base.yml -f docker-compose-cordys.yml"
+  mkdir -p ${CORDYS_BASE}/cordys/logs/cordys-crm
 
+  # 是否使用外部数据库
+  if [ "${CORDYS_EXTERNAL_MYSQL}" = "false" ]; then
+    mkdir -p ${CORDYS_BASE}/cordys/data/mysql
+    chmod 655 ${CORDYS_BASE}/cordys/conf/my.cnf
+    compose_files="${compose_files} -f docker-compose-mysql.yml"
   fi
+  # 是否使用外部 Redis
+  if [ "${CORDYS_EXTERNAL_REDIS}" = "false" ]; then
+    mkdir -p ${CORDYS_BASE}/cordys/data/redis
+    compose_files="${compose_files} -f docker-compose-redis.yml"
+  fi
+
   echo ${compose_files} >${CORDYS_BASE}/cordys/compose_files
   chmod 777 -R ${CORDYS_BASE}/cordys/logs/cordys
   chmod +rw -R ${CORDYS_BASE}/cordys/conf

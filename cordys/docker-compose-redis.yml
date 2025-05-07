@@ -1,21 +1,21 @@
 version: "3"
 services:
   redis:
-    image: ${CORDYS_IMAGE_PREFIX}/redis:7.2.7-alpine
+    image: ${CORDYS_IMAGE_PREFIX}/cordys-crm-ce:${CORDYS_IMAGE_TAG}
     container_name: redis
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 6s
       timeout: 5s
       retries: 50
+    entrypoint: [ "/shells/start-redis.sh" ]
     environment:
       TZ: "Asia/Shanghai"
     ports:
       - ${CORDYS_REDIS_PORT}:6379
     volumes:
       - ${CORDYS_BASE}/cordys/conf/redis.conf:/etc/redis/redis.conf
-      - ms-redis-data:/data
-    command: redis-server /etc/redis/redis.conf --requirepass ${CORDYS_REDIS_PASSWORD}
+      - cordys-redis-data:/data
     networks:
       - cordys-network
     restart: always
@@ -25,7 +25,7 @@ services:
         condition: service_healthy
 
 volumes:
-  ms-redis-data:
+  cordys-redis-data:
     driver_opts:
       type: none
       device: ${CORDYS_BASE}/cordys/data/redis

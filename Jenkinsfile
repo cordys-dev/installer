@@ -159,8 +159,8 @@ pipeline {
                         shopt -u extglob
 
                         # 修改安装配置文件中的镜像标签和前缀
-                        sed -i -e "s#CORDYS_IMAGE_TAG=.*#CORDYS_IMAGE_TAG=${RELEASE}#g" ./conf/install.conf
-                        sed -i -e "s#CORDYS_IMAGE_PREFIX=.*#CORDYS_IMAGE_PREFIX=${IMAGE_PREFIX}#g" ./conf/install.conf
+                        sed -i -e \"s#CORDYS_IMAGE_TAG=.*#CORDYS_IMAGE_TAG=${RELEASE}#g\" ./conf/install.conf
+                        sed -i -e \"s#CORDYS_IMAGE_PREFIX=.*#CORDYS_IMAGE_PREFIX=${IMAGE_PREFIX}#g\" ./conf/install.conf
 
                         # 将版本号写入version文件
                         echo ${RELEASE} > ./conf/cordys/version

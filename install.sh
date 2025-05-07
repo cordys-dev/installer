@@ -51,35 +51,6 @@ if [[ ${current_version} > ${target_version} ]]; then
   return 2
 fi
 
-if [[ "${__current_version}" = "v1"* ]] || [[ "${__current_version}" = "v2"* ]]; then
-  if [[ "${__target_version}" = "v3"* ]]; then
-    echo -e "\e[31m不支持升级到此版本\e[0m"
-    return 2
-  fi
-fi
-
-if [[ ${__current_version} =~ "lts" ]];then
-   if [[ ! ${__target_version} =~ "lts" ]];then
-      log "从LTS版本升级到非LTS版本，此版本包含实验性功能请做好数据备份工作"
-      read -p "是否确认升级? [n/y]" __choice </dev/tty
-      case "$__choice" in
-         y|Y) echo "继续安装...";;
-         n|N) echo "退出安装..."&exit;;
-         *) echo "退出安装..."&exit;;
-      esac
-   fi
-else
-   if [[ $(cat ${__current_dir}/cordys/version) =~ "lts" && ${INSTALL_TYPE} == "upgrade" ]];then
-      log "\e[31m从非LTS版本升级到LTS版本后，后续只能自动升级LTS版本，如升级非LTS版本，需手动升级！\e[0m"
-      read -p "是否确认升级? [n/y]" __choice </dev/tty
-      case "$__choice" in
-         y|Y) echo "继续安装...";;
-         n|N) echo "退出安装..."&exit;;
-         *) echo "退出安装..."&exit;;
-      esac
-   fi
-fi
-
 log "拷贝安装文件到目标目录"
 
 mkdir -p ${CORDYS_BASE}/cordys
@@ -151,6 +122,7 @@ fi
 # 将配置信息存储到安装目录的环境变量配置文件中
 echo '' >> ${CORDYS_BASE}/cordys/.env
 cp -f ${__current_dir}/install.conf ${CORDYS_BASE}/cordys/install.conf.example
+
 # 通过加载环境变量的方式保留已修改的配置项，仅添加新增的配置项
 source ${__current_dir}/install.conf
 source ~/.cordysrc >/dev/null 2>&1
@@ -161,13 +133,8 @@ export CORDYS_IMAGE_TAG=${__cordys_image_tag}
 env | grep CORDYS_ > ${CORDYS_BASE}/cordys/.env
 ln -s ${CORDYS_BASE}/cordys/.env ${CORDYS_BASE}/cordys/install.conf 2>/dev/null
 grep "127.0.0.1 $(hostname)" /etc/hosts >/dev/null || echo "127.0.0.1 $(hostname)" >> /etc/hosts
+
 crmctl generate_compose_files
-crmctl config 1>/dev/null 2>/dev/null
-if [ $? != 0 ];then
-   crmctl config
-   log "docker-compose 版本与配置文件不兼容或配置文件存在问题，请重新安装最新版本的 docker-compose 或检查配置文件"
-   exit
-fi
 
 exec > >(tee -a ${__current_dir}/install.log) 2>&1
 set -e

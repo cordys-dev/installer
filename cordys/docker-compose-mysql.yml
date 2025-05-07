@@ -1,13 +1,14 @@
 version: "3"
 services:
   mysql:
-    image: ${CORDYS_IMAGE_PREFIX}/mysql:8.0.38
+    image: ${CORDYS_IMAGE_PREFIX}/cordys-crm-ce:${CORDYS_IMAGE_TAG}
     container_name: mysql
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${CORDYS_MYSQL_PASSWORD}"]
       interval: 6s
       timeout: 5s
       retries: 50
+    entrypoint: [ "/shells/start-mysql.sh" ]
     environment:
       MYSQL_DATABASE: ${CORDYS_MYSQL_DB}
       MYSQL_ROOT_PASSWORD: ${CORDYS_MYSQL_PASSWORD}
