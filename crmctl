@@ -45,7 +45,7 @@ function generate_compose_files() {
   fi
 
   echo ${compose_files} >${CORDYS_BASE}/cordys/compose_files
-  chmod 777 -R ${CORDYS_BASE}/cordys/logs/cordys
+  chmod 777 -R ${CORDYS_BASE}/cordys/logs/cordys-crm
   chmod +rw -R ${CORDYS_BASE}/cordys/conf
   chmod +rw -R ${CORDYS_BASE}/cordys/*.yml
   COMPOSE_FILES=$(cat ${CORDYS_BASE}/cordys/compose_files 2>/dev/null || echo "")
