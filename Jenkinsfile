@@ -292,14 +292,13 @@ pipeline {
                         # 添加企业版特有配置
                         echo '# 企业版配置' >> ./conf/install.conf
                         echo 'CORDYS_ENTERPRISE_ENABLE=true' >> ./conf/install.conf
+                        sed -i -e \"s#CORDYS_IMAGE_NAME=.*#CORDYS_IMAGE_NAME=cordys-crm-ee#g\" ./conf/install.conf
 
                         # 打包企业版离线安装包
                         tar --transform "s|^|cordys-crm-ee-offline-installer-${RELEASE}-${ARCH}/|" \\
                           -czvf cordys-crm-ee-offline-installer-${RELEASE}-${ARCH}.tar.gz \\
                           docker images -C conf .
-
-                        sed -i -e \"s#CORDYS_IMAGE_NAME=.*#CORDYS_IMAGE_NAME=cordys-crm-ee#g\" ./conf/install.conf
-
+                          
                         # 生成企业版MD5校验文件
                         md5sum -b cordys-crm-ee-offline-installer-${RELEASE}-${ARCH}.tar.gz | awk '{print \$1}' > cordys-crm-ee-offline-installer-${RELEASE}-${ARCH}.tar.gz.md5
                         rm -rf images conf
