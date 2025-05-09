@@ -1,21 +1,21 @@
 version: "3"
 services:
   cordys:
-    image: ${CORDYS_IMAGE_PREFIX}/cordys-crm-ce:${CORDYS_IMAGE_TAG}
+    image: ${CORDYS_IMAGE_PREFIX}/${CORDYS_IMAGE_NAME}:${CORDYS_IMAGE_TAG}
     container_name: cordys-crm
     deploy:
       resources:
         limits:
           memory: ${CORDYS_MEM_LIMIT}
-    entrypoint: ["/shells/start-cordys.sh"]
+    entrypoint: [ "/shells/start-cordys.sh" ]
     environment:
       SPRING_DATASOURCE_URL: jdbc:mysql://${CORDYS_MYSQL_HOST}:${CORDYS_MYSQL_PORT}/${CORDYS_MYSQL_DB}?autoReconnect=false&useUnicode=true&characterEncoding=UTF-8&characterSetResults=UTF-8&zeroDateTimeBehavior=convertToNull&allowPublicKeyRetrieval=true&useSSL=false&sessionVariables=sql_mode=%27STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION%27
       SPRING_DATASOURCE_USERNAME: ${CORDYS_MYSQL_USER}
       SPRING_DATASOURCE_PASSWORD: ${CORDYS_MYSQL_PASSWORD}
       SPRING_SESSION_TIMEOUT: '30d'
-      REDIS_HOST: ${CORDYS_REDIS_HOST}
-      REDIS_PORT: ${CORDYS_REDIS_PORT}
-      REDIS_PASSWORD: ${CORDYS_REDIS_PASSWORD}
+      SPRING_DATA_REDIS_HOST: ${CORDYS_REDIS_HOST}
+      SPRING_DATA_REDIS_PORT: ${CORDYS_REDIS_PORT}
+      SPRING_DATA_REDIS_PASSWORD: ${CORDYS_REDIS_PASSWORD}
     ports:
       - ${CORDYS_SERVER_PORT}:8081
     healthcheck:

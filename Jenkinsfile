@@ -298,6 +298,8 @@ pipeline {
                           -czvf cordys-crm-ee-offline-installer-${RELEASE}-${ARCH}.tar.gz \\
                           docker images -C conf .
 
+                        sed -i -e \"s#CORDYS_IMAGE_NAME=.*#CORDYS_IMAGE_NAME=cordys-crm-ee#g\" ./conf/install.conf
+
                         # 生成企业版MD5校验文件
                         md5sum -b cordys-crm-ee-offline-installer-${RELEASE}-${ARCH}.tar.gz | awk '{print \$1}' > cordys-crm-ee-offline-installer-${RELEASE}-${ARCH}.tar.gz.md5
                         rm -rf images conf

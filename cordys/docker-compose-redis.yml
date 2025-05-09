@@ -1,7 +1,7 @@
 version: "3"
 services:
   redis:
-    image: ${CORDYS_IMAGE_PREFIX}/cordys-crm-ce:${CORDYS_IMAGE_TAG}
+    image: ${CORDYS_IMAGE_PREFIX}/${CORDYS_IMAGE_NAME}:${CORDYS_IMAGE_TAG}
     container_name: redis
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
@@ -11,10 +11,11 @@ services:
     entrypoint: [ "/shells/start-redis.sh" ]
     environment:
       TZ: "Asia/Shanghai"
+    command: [ "redis-server", "--requirepass", "${CORDYS_REDIS_PASSWORD}" ]
     ports:
       - ${CORDYS_REDIS_PORT}:6379
     volumes:
-      - ${CORDYS_BASE}/cordys/conf/redis.conf:/etc/redis/redis.conf
+      - ${CORDYS_BASE}/cordys/conf/redis/redis.conf:/opt/cordys/conf/redis/redis.conf
       - cordys-redis-data:/data
     networks:
       - cordys-network
