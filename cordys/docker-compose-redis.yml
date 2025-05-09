@@ -12,7 +12,6 @@ services:
     environment:
       REDIS_PASSWORD: ${CORDYS_REDIS_PASSWORD}
       TZ: "Asia/Shanghai"
-    command: [ "redis-server", "--requirepass", "${CORDYS_REDIS_PASSWORD}" ]
     ports:
       - ${CORDYS_REDIS_PORT}:6379
     volumes:
