@@ -10,6 +10,7 @@ services:
       retries: 50
     entrypoint: [ "/shells/start-redis.sh" ]
     environment:
+      REDIS_PASSWORD: ${CORDYS_REDIS_PASSWORD}
       TZ: "Asia/Shanghai"
     command: [ "redis-server", "--requirepass", "${CORDYS_REDIS_PASSWORD}" ]
     ports:
