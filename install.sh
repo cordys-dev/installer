@@ -48,7 +48,7 @@ target_version=$(printf '1%02d%02d%02d' ${target_version_arr[0]} ${target_versio
 
 if [[ ${current_version} > ${target_version} ]]; then
   echo -e "\e[31m不支持降级\e[0m"
-  return 2
+  exit 2
 fi
 
 log "拷贝安装文件到目标目录"
