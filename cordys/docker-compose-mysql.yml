@@ -1,4 +1,3 @@
-version: "3"
 services:
   mysql:
     image: ${CORDYS_IMAGE_PREFIX}/${CORDYS_IMAGE_NAME}:${CORDYS_IMAGE_TAG}
