@@ -15,7 +15,7 @@ services:
       - ${CORDYS_REDIS_PORT}:6379
     volumes:
       - ${CORDYS_BASE}/cordys/conf/redis/redis.conf:/opt/cordys/conf/redis/redis.conf
-      - cordys-redis-data:/data
+      - cordys-redis-data:/opt/cordys/data/redis
     networks:
       - cordys-network
     restart: always

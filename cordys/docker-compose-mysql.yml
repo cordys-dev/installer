@@ -16,7 +16,7 @@ services:
       - ${CORDYS_MYSQL_PORT}:3306
     volumes:
       - ${CORDYS_BASE}/cordys/conf/mysql/my.cnf:/etc/mysql/conf.d/my.cnf
-      - cordys-mysql-data:/var/lib/mysql
+      - cordys-mysql-data:/opt/cordys/data/mysql
     networks:
       - cordys-network
     restart: always
