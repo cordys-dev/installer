@@ -20,8 +20,8 @@ if [ -f ~/.cordysrc ];then
   source ~/.cordysrc > /dev/null
   echo "存在已安装的 CORDYS CRM, 安装目录为 ${CORDYS_BASE}/cordys, 执行升级流程"
   INSTALL_TYPE='upgrade'
-elif [ -f /usr/local/bin/crmctl ];then
-  CORDYS_BASE=$(cat /usr/local/bin/crmctl | grep CORDYS_BASE= | awk -F= '{print $2}' 2>/dev/null)
+elif [ -f /usr/local/bin/csctl ];then
+  CORDYS_BASE=$(cat /usr/local/bin/csctl | grep CORDYS_BASE= | awk -F= '{print $2}' 2>/dev/null)
   echo "存在已安装的 CORDYS CRM, 安装目录为 ${CORDYS_BASE}/cordys, 执行升级流程"
   INSTALL_TYPE='upgrade'
 else
@@ -59,9 +59,9 @@ cp -rv --suffix=.$(date +%Y%m%d-%H%M) ./cordys ${CORDYS_BASE}/
 
 # 记录MeterSphere安装路径
 echo "CORDYS_BASE=${CORDYS_BASE}" > ~/.cordysrc
-# 安装 crmctl 命令
-cp crmctl /usr/local/bin && chmod +x /usr/local/bin/crmctl
-ln -s /usr/local/bin/crmctl /usr/bin/crmctl 2>/dev/null
+# 安装 csctl 命令
+cp csctl /usr/local/bin && chmod +x /usr/local/bin/csctl
+ln -s /usr/local/bin/csctl /usr/bin/csctl 2>/dev/null
 
 log "======================= 开始安装 ======================="
 #Install docker & docker-compose
@@ -134,7 +134,7 @@ env | grep CORDYS_ > ${CORDYS_BASE}/cordys/.env
 ln -s ${CORDYS_BASE}/cordys/.env ${CORDYS_BASE}/cordys/install.conf 2>/dev/null
 grep "127.0.0.1 $(hostname)" /etc/hosts >/dev/null || echo "127.0.0.1 $(hostname)" >> /etc/hosts
 
-crmctl generate_compose_files
+csctl generate_compose_files
 
 exec > >(tee -a ${__current_dir}/install.log) 2>&1
 set -e
@@ -148,20 +148,20 @@ if [[ -d images ]]; then
    done
 else
    log "拉取镜像"
-   crmctl pull
+   csctl pull
    curl -sfL https://resource.fit2cloud.com/installation-log.sh | sh -s cordys ${INSTALL_TYPE} ${CORDYS_IMAGE_TAG}
    cd -
 fi
 
 log "启动服务"
-crmctl down -v
-crmctl up -d --remove-orphans
+csctl down -v
+csctl up -d --remove-orphans
 
-crmctl status
+csctl status
 
 echo -e "======================= 安装完成 =======================\n"
 
 LOCAL_IP=$(hostname -I|cut -d" " -f 1)
 
 echo -e "请通过以下方式访问:\n URL: http://${LOCAL_IP}:${CORDYS_SERVER_PORT}\n 用户名: admin\n 初始密码: CrodysCRM"
-echo -e "您可以使用命令 'crmctl status' 检查服务运行情况.\n"
+echo -e "您可以使用命令 'csctl status' 检查服务运行情况.\n"
