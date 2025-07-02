@@ -25,6 +25,7 @@ services:
     restart: always
     volumes:
       - ${CORDYS_BASE}/cordys/conf:/opt/cordys/conf
+      - ${CORDYS_BASE}/cordys/data/files:/opt/cordys/data/files
       - ${CORDYS_BASE}/cordys/logs/cordys-crm:/opt/cordys/logs/cordys-crm
     networks:
       - cordys-network
