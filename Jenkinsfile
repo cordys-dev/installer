@@ -43,28 +43,24 @@ pipeline {
                         withEnv(["TOKEN=$TOKEN"]) {
                         script {
                             // 社区版API端点
-                            def ceWorkflowApi = "https://api.github.com/repos/fit2-zhao/actions/actions/workflows/build-and-push.yml/dispatches"
+                            def ceWorkflowApi = "https://api.github.com/repos/fit2-zhao/actions/actions/workflows/build-and-push-x.yml/dispatches"
                             def ceRepoApi = "https://api.github.com/repos/fit2-zhao/actions/actions/runs"
 
-                            // 企业版API端点
-                            def eeWorkflowApi = "https://api.github.com/repos/fit2-zhao/actions/actions/workflows/build-and-push-xpack.yml/dispatches"
-                            def eeRepoApi = "https://api.github.com/repos/fit2-zhao/actions/actions/runs"
-
                             // 触发社区版构建工作流
-                            echo "开始触发社区版构建工作流..."
+                            echo "开始触发构建工作流..."
                             def ceResponse = sh(script: """
                                                curl -X POST -H "Authorization: Bearer $TOKEN" \\
                                                     -H "Accept: application/vnd.github.v3+json" \\
                                                     ${ceWorkflowApi} \\
-                                                    -d '{ "ref":"main", "inputs":{"dockerImageTag":"${RELEASE}", "architecture":"${ARCHITECTURE}", "registry":"fit2cloud-registry"}}'
+                                                    -d '{ "ref":"main", "inputs":{"dockerImageTag":"${RELEASE}", "architecture":"${ARCHITECTURE}", "csBranch":"${BRANCH}"}}'
                                              """, returnStatus: true)
 
 
                             if (ceResponse != 0) {
-                                error "社区版镜像构建工作流触发失败"
+                                error "镜像构建工作流触发失败"
                             }
 
-                            echo "社区版镜像构建工作流触发成功，开始监控执行状态..."
+                            echo "镜像构建工作流触发成功，开始监控执行状态..."
 
                             // 检查社区版工作流状态
                             def ceBuildSuccess = false
@@ -79,62 +75,19 @@ pipeline {
                                     def status = sh(script: "echo '$statusJson' | grep -oP '\"status\": \"\\K[^\"]+' || echo 'unknown'", returnStdout: true).trim()
                                     def conclusion = sh(script: "echo '$statusJson' | grep -oP '\"conclusion\": \"\\K[^\"]+' || echo 'unknown'", returnStdout: true).trim()
 
-                                    echo "社区版工作流当前状态: ${status}"
+                                    echo "工作流当前状态: ${status}"
 
                                     if (status == "completed") {
                                         if (conclusion == "success") {
-                                            echo "社区版构建工作流执行成功!"
+                                            echo "构建工作流执行成功!"
                                             ceBuildSuccess = true
                                             return true
                                         } else {
-                                            error "社区版构建工作流执行失败"
+                                            error "构建工作流执行失败"
                                         }
                                     }
 
                                     return false
-                                }
-                            }
-
-                            // 确认社区版构建成功后，触发企业版构建工作流
-                            if (ceBuildSuccess) {
-                                echo "开始触发企业版构建工作流..."
-                                def eeResponse = sh(script: """
-                                                   curl -X POST -H "Authorization: Bearer $TOKEN" \\
-                                                        -H "Accept: application/vnd.github.v3+json" \\
-                                                        ${eeWorkflowApi} \\
-                                                        -d '{ "ref":"main", "inputs":{"dockerImageTag":"${RELEASE}", "architecture":"${ARCHITECTURE}"}}'
-                                                 """, returnStatus: true)
-                                if (eeResponse != 0) {
-                                    error "企业版镜像构建工作流触发失败"
-                                }
-
-                                echo "企业版镜像构建工作流触发成功，开始监控执行状态..."
-
-                                // 检查企业版工作流状态
-                                timeout(time: 30, unit: 'MINUTES') {
-                                    waitUntil {
-                                        sleep(time: 10, unit: 'SECONDS')
-                                        def statusJson = sh(script: '''
-                                            curl -s -H "Authorization: Bearer $TOKEN" \
-                                            "''' + eeRepoApi + '''?event=workflow_dispatch&per_page=1"
-                                        ''', returnStdout: true).trim()
-
-                                        def status = sh(script: "echo '$statusJson' | grep -oP '\"status\": \"\\K[^\"]+' || echo 'unknown'", returnStdout: true).trim()
-                                        def conclusion = sh(script: "echo '$statusJson' | grep -oP '\"conclusion\": \"\\K[^\"]+' || echo 'unknown'", returnStdout: true).trim()
-
-                                        echo "企业版工作流当前状态: ${status}"
-
-                                        if (status == "completed") {
-                                            if (conclusion == "success") {
-                                                echo "企业版构建工作流执行成功!"
-                                                return true
-                                            } else {
-                                                error "企业版构建工作流执行失败"
-                                            }
-                                        }
-
-                                        return false
-                                    }
                                 }
                             }
                         }
@@ -288,7 +241,8 @@ pipeline {
                         tar --transform "s|^|cordys-crm-ee-offline-installer-${RELEASE}-${ARCH}/|" \\
                           -czvf cordys-crm-ee-offline-installer-${RELEASE}-${ARCH}.tar.gz \\
                           docker images -C conf .
-                          
+
+
                         # 生成企业版MD5校验文件
                         md5sum -b cordys-crm-ee-offline-installer-${RELEASE}-${ARCH}.tar.gz | awk '{print \$1}' > cordys-crm-ee-offline-installer-${RELEASE}-${ARCH}.tar.gz.md5
                         rm -rf images conf
