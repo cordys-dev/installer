@@ -6,33 +6,45 @@ on:
       dockerImageTag:
         description: 'Docker Image Tag'
         default: 'dev'
-        required: true
+        required: false
+  release:
+    types:
+      - published
 
 jobs:
   sync:
     runs-on: ubuntu-latest
     steps:
-      # 登录 Docker Hub（用于后续 docker push）
+      # 设置 Docker tag，根据触发来源自动选择
+      - name: Set Docker tag
+        id: set_tag
+        run: |
+          if [ "${{ github.event_name }}" = "release" ]; then
+            echo "TAG=${GITHUB_EVENT_RELEASE_TAG}" >> $GITHUB_ENV
+          else
+            echo "TAG=${{ github.event.inputs.dockerImageTag }}" >> $GITHUB_ENV
+          fi
+        env:
+          GITHUB_EVENT_RELEASE_TAG: ${{ github.event.release.tag_name }}
+
+      # 登录 Docker Hub
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      # 使用 skopeo 将远端镜像复制到本地 docker daemon（只拉一次）
+      # 使用 skopeo 将远端镜像复制到本地 docker daemon
       - name: Copy image into local docker daemon with skopeo
         env:
-          TAG: ${{ github.event.inputs.dockerImageTag }}
-          SRC: ${{ secrets.FIT2CLOUD_REGISTRY_HOST }}/cordys/cordys-crm-ce:${{ github.event.inputs.dockerImageTag }}
-          # 复制到本地 daemon 时用短引用（username/repo:tag），方便后续 docker tag/push
-          DEST_DAEMON: ${{ secrets.DOCKERHUB_USERNAME }}/cordys-crm:${{ github.event.inputs.dockerImageTag }}
+          SRC: ${{ secrets.FIT2CLOUD_REGISTRY_HOST }}/cordys/cordys-crm-ce:${{ env.TAG }}
+          DEST_DAEMON: ${{ secrets.DOCKERHUB_USERNAME }}/cordys-crm:${{ env.TAG }}
           SRC_USER: ${{ secrets.FIT2CLOUD_REGISTRY_USERNAME }}
           SRC_PASSWORD: ${{ secrets.FIT2CLOUD_REGISTRY_PASSWORD }}
           SKOPEO_IMAGE: quay.io/skopeo/stable:v1.15.0
         run: |
           set -e
           echo "skopeo: copying ${SRC} -> docker-daemon:${DEST_DAEMON}"
-          # 把宿主的 docker socket 挂进去，这样 skopeo 可以写入本地 docker daemon
           docker run --rm \
             -v /var/run/docker.sock:/var/run/docker.sock \
             --entrypoint skopeo \
@@ -44,7 +56,6 @@ jobs:
       # 在本地打 latest 并 push 两个 tag 到 Docker Hub
       - name: Tag as latest and push both tags
         env:
-          TAG: ${{ github.event.inputs.dockerImageTag }}
           REPO: ${{ secrets.DOCKERHUB_USERNAME }}/cordys-crm
         run: |
           set -e
