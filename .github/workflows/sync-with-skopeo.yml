@@ -1,0 +1,64 @@
+name: Sync image to Docker Hub (skopeo)
+
+on:
+  workflow_dispatch:
+    inputs:
+      dockerImageTag:
+        description: 'Docker Image Tag'
+        default: 'dev'
+        required: true
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      # 登录 Docker Hub（用于后续 docker push）
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # 使用 skopeo 将远端镜像复制到本地 docker daemon（只拉一次）
+      - name: Copy image into local docker daemon with skopeo
+        env:
+          TAG: ${{ github.event.inputs.dockerImageTag }}
+          SRC: ${{ secrets.FIT2CLOUD_REGISTRY_HOST }}/cordys/cordys-crm-ce:${{ github.event.inputs.dockerImageTag }}
+          # 复制到本地 daemon 时用短引用（username/repo:tag），方便后续 docker tag/push
+          DEST_DAEMON: ${{ secrets.DOCKERHUB_USERNAME }}/cordys-crm:${{ github.event.inputs.dockerImageTag }}
+          SRC_USER: ${{ secrets.FIT2CLOUD_REGISTRY_USERNAME }}
+          SRC_PASSWORD: ${{ secrets.FIT2CLOUD_REGISTRY_PASSWORD }}
+          SKOPEO_IMAGE: quay.io/skopeo/stable:v1.15.0
+        run: |
+          set -e
+          echo "skopeo: copying ${SRC} -> docker-daemon:${DEST_DAEMON}"
+          # 把宿主的 docker socket 挂进去，这样 skopeo 可以写入本地 docker daemon
+          docker run --rm \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            --entrypoint skopeo \
+            ${SKOPEO_IMAGE} \
+            copy \
+            --src-creds "${SRC_USER}:${SRC_PASSWORD}" \
+            docker://${SRC} docker-daemon:${DEST_DAEMON}
+
+      # 在本地打 latest 并 push 两个 tag 到 Docker Hub
+      - name: Tag as latest and push both tags
+        env:
+          TAG: ${{ github.event.inputs.dockerImageTag }}
+          REPO: ${{ secrets.DOCKERHUB_USERNAME }}/cordys-crm
+        run: |
+          set -e
+          IMAGE_TAG="${REPO}:${TAG}"
+          IMAGE_LATEST="${REPO}:latest"
+
+          echo "Tag present in local daemon: ${IMAGE_TAG}"
+          echo "Tagging ${IMAGE_TAG} -> ${IMAGE_LATEST}"
+          docker tag "${IMAGE_TAG}" "${IMAGE_LATEST}"
+
+          echo "Pushing ${IMAGE_TAG}"
+          docker push "${IMAGE_TAG}"
+
+          echo "Pushing ${IMAGE_LATEST}"
+          docker push "${IMAGE_LATEST}"
+
+          echo "Done."
