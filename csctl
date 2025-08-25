@@ -10,22 +10,22 @@ source ${CORDYS_BASE}/cordys/install.conf
 export COMPOSE_HTTP_TIMEOUT=180
 
 function usage() {
-  echo "CORDYS CRM 控制脚本"
+  echo "Cordys CRM 控制脚本"
   echo
   echo "Usage: "
   echo "  ./csctl.sh [COMMAND] [ARGS...]"
   echo "  ./csctl.sh --help"
   echo
   echo "Commands: "
-  echo "  status    查看 CORDYS CRM 服务运行状态"
-  echo "  start     启动 CORDYS CRM 服务"
-  echo "  stop      停止 CORDYS CRM 服务"
-  echo "  restart   重启 CORDYS CRM 服务"
-  echo "  reload    重新加载 CORDYS CRM 服务"
-  echo "  upgrade   升级 CORDYS CRM 至最新版本"
-  echo "  upgrade [RELEASE]  根据版本号搜索离线包，升级 CORDYS CRM 至对应版本"
-  echo "  uninstall 卸载 CORDYS CRM 服务"
-  echo "  version   查看 CORDYS CRM 版本信息"
+  echo "  status    查看 Cordys CRM 服务运行状态"
+  echo "  start     启动 Cordys CRM 服务"
+  echo "  stop      停止 Cordys CRM 服务"
+  echo "  restart   重启 Cordys CRM 服务"
+  echo "  reload    重新加载 Cordys CRM 服务"
+  echo "  upgrade   升级 Cordys CRM 至最新版本"
+  echo "  upgrade [RELEASE]  根据版本号搜索离线包，升级 Cordys CRM 至对应版本"
+  echo "  uninstall 卸载 Cordys CRM 服务"
+  echo "  version   查看 Cordys CRM 版本信息"
 }
 
 function generate_compose_files() {

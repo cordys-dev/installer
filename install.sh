@@ -8,7 +8,7 @@ args=$@
 __os=`uname -a`
 
 function log() {
-   message="[CORDYS CRM Log]: $1 "
+   message="[Cordys CRM Log]: $1 "
    echo -e "${message}" 2>&1 | tee -a ${__current_dir}/install.log
 }
 set -a
@@ -18,11 +18,11 @@ source ${__current_dir}/install.conf
 export INSTALL_TYPE='install'
 if [ -f ~/.cordysrc ];then
   source ~/.cordysrc > /dev/null
-  echo "存在已安装的 CORDYS CRM, 安装目录为 ${CORDYS_BASE}/cordys, 执行升级流程"
+  echo "存在已安装的 Cordys CRM, 安装目录为 ${CORDYS_BASE}/cordys, 执行升级流程"
   INSTALL_TYPE='upgrade'
 elif [ -f /usr/local/bin/csctl ];then
   CORDYS_BASE=$(cat /usr/local/bin/csctl | grep CORDYS_BASE= | awk -F= '{print $2}' 2>/dev/null)
-  echo "存在已安装的 CORDYS CRM, 安装目录为 ${CORDYS_BASE}/cordys, 执行升级流程"
+  echo "存在已安装的 Cordys CRM, 安装目录为 ${CORDYS_BASE}/cordys, 执行升级流程"
   INSTALL_TYPE='upgrade'
 else
   CORDYS_BASE=$(cat ${__current_dir}/install.conf | grep CORDYS_BASE= | awk -F= '{print $2}' 2>/dev/null)

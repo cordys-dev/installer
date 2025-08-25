@@ -1,1 +1,1 @@
-# CORDYS CRM Integration
+# Cordys CRM Integration
