@@ -257,8 +257,8 @@ pipeline {
                         sh("java -jar /opt/uploadToOss.jar $AK $SK fit2cloud2-offline-installer cordys-crm/release/cordys-crm-ce-offline-installer-${RELEASE}-${ARCH}.tar.gz.md5 ./cordys-crm-ce-offline-installer-${RELEASE}-${ARCH}.tar.gz.md5")
 
                         // 上传企业版离线安装包和MD5文件
-                        //sh("java -jar /opt/uploadToOss.jar $AK $SK fit2cloud2-offline-installer cordys/release/cordys-crm-ee-offline-installer-${RELEASE}-${ARCH}.tar.gz ./cordys-crm-ee-offline-installer-${RELEASE}-${ARCH}.tar.gz")
-                        //sh("java -jar /opt/uploadToOss.jar $AK $SK fit2cloud2-offline-installer cordys/release/cordys-crm-ee-offline-installer-${RELEASE}-${ARCH}.tar.gz.md5 ./cordys-crm-ee-offline-installer-${RELEASE}-${ARCH}.tar.gz.md5")
+                        //sh("java -jar /opt/uploadToOss.jar $AK $SK fit2cloud2-offline-installer cordys-crm/release/cordys-crm-ee-offline-installer-${RELEASE}-${ARCH}.tar.gz ./cordys-crm-ee-offline-installer-${RELEASE}-${ARCH}.tar.gz")
+                        //sh("java -jar /opt/uploadToOss.jar $AK $SK fit2cloud2-offline-installer cordys-crm/release/cordys-crm-ee-offline-installer-${RELEASE}-${ARCH}.tar.gz.md5 ./cordys-crm-ee-offline-installer-${RELEASE}-${ARCH}.tar.gz.md5")
                     }
                 }
             }
