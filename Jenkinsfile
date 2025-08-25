@@ -173,7 +173,7 @@ pipeline {
 
                             // 上传到 uploadToOss
                             /* sh """
-                                ossutil -c /opt/jenkins-home/cordys/config cp -f cordys-ce-online-installer-${RELEASE}.tar.gz oss://resource-fit2cloud-com/cordys/cordys/releases/download/${RELEASE}/ --update
+                                ossutil -c /opt/jenkins-home/cordys/config cp -f cordys-crm-ce-online-installer-${RELEASE}.tar.gz oss://resource-fit2cloud-com/cordys/cordys/releases/download/${RELEASE}/ --update
 
                             """ */
                         }
