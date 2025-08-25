@@ -247,15 +247,14 @@ pipeline {
 
         // 阶段7：上传离线安装包到OSS
         stage('Upload') {
-            when { tag pattern: "^v.*", comparator: "REGEXP" }
             steps {
                 dir('installer') {
                     echo "UPLOADING"
                     // 使用OSS凭据上传文件
                     withCredentials([usernamePassword(credentialsId: 'OSSKEY', passwordVariable: 'SK', usernameVariable: 'AK')]) {
                         // 上传社区版离线安装包和MD5文件
-                        sh("java -jar /opt/uploadToOss.jar $AK $SK fit2cloud2-offline-installer cordys/release/cordys-crm-ce-offline-installer-${RELEASE}-${ARCH}.tar.gz ./cordys-crm-ce-offline-installer-${RELEASE}-${ARCH}.tar.gz")
-                        sh("java -jar /opt/uploadToOss.jar $AK $SK fit2cloud2-offline-installer cordys/release/cordys-crm-ce-offline-installer-${RELEASE}-${ARCH}.tar.gz.md5 ./cordys-crm-ce-offline-installer-${RELEASE}-${ARCH}.tar.gz.md5")
+                        sh("java -jar /opt/uploadToOss.jar $AK $SK fit2cloud2-offline-installer cordys-crm/release/cordys-crm-ce-offline-installer-${RELEASE}-${ARCH}.tar.gz ./cordys-crm-ce-offline-installer-${RELEASE}-${ARCH}.tar.gz")
+                        sh("java -jar /opt/uploadToOss.jar $AK $SK fit2cloud2-offline-installer cordys-crm/release/cordys-crm-ce-offline-installer-${RELEASE}-${ARCH}.tar.gz.md5 ./cordys-crm-ce-offline-installer-${RELEASE}-${ARCH}.tar.gz.md5")
 
                         // 上传企业版离线安装包和MD5文件
                         //sh("java -jar /opt/uploadToOss.jar $AK $SK fit2cloud2-offline-installer cordys/release/cordys-crm-ee-offline-installer-${RELEASE}-${ARCH}.tar.gz ./cordys-crm-ee-offline-installer-${RELEASE}-${ARCH}.tar.gz")
