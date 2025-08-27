@@ -54,10 +54,9 @@ fi
 log "拷贝安装文件到目标目录"
 
 mkdir -p ${CORDYS_BASE}/cordys
-cp -f ./cordys/version ${CORDYS_BASE}/cordys/version
 cp -rv --suffix=.$(date +%Y%m%d-%H%M) ./cordys ${CORDYS_BASE}/
 
-# 记录MeterSphere安装路径
+# 记录安装路径
 echo "CORDYS_BASE=${CORDYS_BASE}" > ~/.cordysrc
 # 安装 csctl 命令
 cp csctl /usr/local/bin && chmod +x /usr/local/bin/csctl
@@ -121,7 +120,6 @@ fi
 
 # 将配置信息存储到安装目录的环境变量配置文件中
 echo '' >> ${CORDYS_BASE}/cordys/.env
-cp -f ${__current_dir}/install.conf ${CORDYS_BASE}/cordys/install.conf.example
 
 # 通过加载环境变量的方式保留已修改的配置项，仅添加新增的配置项
 source ${__current_dir}/install.conf
