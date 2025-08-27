@@ -10,7 +10,7 @@ if [[ -f "$HOME/.cordysrc" ]]; then
   source "$HOME/.cordysrc" >/dev/null
 fi
 CORDYS_BASE=${CORDYS_BASE:-/opt}
-COMPOSE_FILES=$(<"${CORDYS_BASE}/cordys/compose_files" 2>/dev/null || echo "")
+COMPOSE_FILES=$(cat ${CORDYS_BASE}/cordys/compose_files 2>/dev/null || echo "")
 source "${CORDYS_BASE}/cordys/install.conf"
 export COMPOSE_HTTP_TIMEOUT=180
 
