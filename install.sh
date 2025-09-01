@@ -159,5 +159,5 @@ csctl status
 
 echo -e "======================= 安装完成 =======================\n"
 
-echo -e "请通过以下方式访问:\n URL: http://<你的服务器IP>:${CORDYS_SERVER_PORT}\n 用户名: admin\n 初始密码: CrodysCRM"
+echo -e "请通过以下方式访问:\n URL: http://<你的服务器IP>:${CORDYS_SERVER_PORT}\n 用户名: admin\n 初始密码: CordysCRM"
 echo -e "您可以使用命令 'csctl status' 检查服务运行情况.\n"
