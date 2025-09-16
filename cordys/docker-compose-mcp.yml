@@ -1,0 +1,16 @@
+services:
+  cordys:
+    image: ${CORDYS_IMAGE_PREFIX}/${CORDYS_IMAGE_NAME}:${CORDYS_IMAGE_TAG}
+    container_name: cordys-crm-mcp-server
+    
+    entrypoint: [ "/shells/start-mcp.sh" ]
+    ports:
+      - ${CORDYS_MCP_SERVER_PORT}:8082
+    healthcheck:
+      test: [ "CMD", "bash", "-c", "< /dev/tcp/localhost/8082" ]
+      interval: 6s
+      timeout: 10s
+      retries: 50
+    restart: always
+    networks:
+      - cordys-network

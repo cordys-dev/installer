@@ -44,6 +44,11 @@ function generate_compose_files() {
     compose_files="${compose_files} -f docker-compose-redis.yml"
   fi
 
+  # 是否使用外部 MCP 服务
+  if [ "${CORDYS_EXTERNAL_MCP_SERVER}" = "false" ]; then
+    compose_files="${compose_files} -f docker-compose-mcp.yml"
+  fi
+
   echo ${compose_files} >${CORDYS_BASE}/cordys/compose_files
   chmod 777 -R ${CORDYS_BASE}/cordys/logs/cordys-crm
   chmod +rw -R ${CORDYS_BASE}/cordys/conf
