@@ -45,7 +45,7 @@ function generate_compose_files() {
   fi
 
   # 是否使用外部 MCP 服务
-  if [ "${CORDYS_EXTERNAL_MCP_SERVER}" = "false" ]; then
+  if [ "${CORDYS_MCP_EXTERNAL_SERVER}" = "false" ]; then
     compose_files="${compose_files} -f docker-compose-mcp.yml"
   fi
 
