@@ -1,9 +1,12 @@
 services:
-  cordys:
+  cordys_mcp:
     image: ${CORDYS_IMAGE_PREFIX}/${CORDYS_IMAGE_NAME}:${CORDYS_IMAGE_TAG}
     container_name: cordys-crm-mcp-server
     
     entrypoint: [ "/shells/start-mcp.sh" ]
+    environment:
+      CORDYS_CRM_URL: http://${CORDYS_SERVER_HOST}:${CORDYS_SERVER_PORT}
+
     ports:
       - ${CORDYS_MCP_SERVER_PORT}:8082
     healthcheck:
