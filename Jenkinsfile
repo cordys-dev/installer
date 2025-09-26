@@ -34,7 +34,24 @@ pipeline {
                 }
             }
         }
-
+     stage('Upload for ARM') {
+                 when {
+                     expression {
+                         env.ARCH == "aarch64"
+                     }
+                 }
+                steps {
+                    dir('installer') {
+                        echo "UPLOADING"
+                        // 使用OSS凭据上传文件
+                        withCredentials([usernamePassword(credentialsId: 'OSSKEY', passwordVariable: 'SK', usernameVariable: 'AK')]) {
+                            // 上传企业版离线安装包和MD5文件
+                            sh("java -jar /opt/uploadToOss.jar $AK $SK fit2cloud2-offline-installer cordys-crm/release/cordys-crm-ee-offline-installer-${RELEASE}-${ARCH}.tar.gz ./cordys-crm-ee-offline-installer-${RELEASE}-${ARCH}.tar.gz")
+                            sh("java -jar /opt/uploadToOss.jar $AK $SK fit2cloud2-offline-installer cordys-crm/release/cordys-crm-ee-offline-installer-${RELEASE}-${ARCH}.tar.gz.md5 ./cordys-crm-ee-offline-installer-${RELEASE}-${ARCH}.tar.gz.md5")
+                        }
+                    }
+                }
+            }
         // 阶段2：触发 GitHub Actions 构建镜像
 //         stage('Trigger GitHub Actions') {
 //             steps {
