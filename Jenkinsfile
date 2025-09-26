@@ -247,6 +247,11 @@ pipeline {
 
         // 阶段7：上传离线安装包到OSS
         stage('Upload') {
+             when {
+                expression {
+                    return env.ARCH ==~ /^x86.*/
+                }
+            }
             steps {
                 dir('installer') {
                     echo "UPLOADING"
@@ -267,9 +272,9 @@ pipeline {
         stage('Upload for ARM') {
             when {
                   expression {
-                      env.ARCH == "aarch64"
+                     return env.ARCH == "aarch64"
                   }
-              }
+            }
             steps {
                 dir('installer') {
                     echo "UPLOADING"
