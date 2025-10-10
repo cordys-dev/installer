@@ -39,22 +39,21 @@ pipeline {
         stage('Trigger GitHub Actions') {
             steps {
                 // 使用GitHub Token进行身份验证
-                    withCredentials([string(credentialsId: 'ZY-GITHUB-TOKEN', variable: 'TOKEN')]) {
-                        withEnv(["TOKEN=$TOKEN"]) {
+                withCredentials([string(credentialsId: 'ZY-GITHUB-TOKEN', variable: 'TOKEN')]) {
+                    withEnv(["TOKEN=$TOKEN"]) {
                         script {
                             // 社区版API端点
-                            def ceWorkflowApi = "https://api.github.com/repos/fit2-zhao/actions/actions/workflows/build-and-push-x.yml/dispatches"
-                            def ceRepoApi = "https://api.github.com/repos/fit2-zhao/actions/actions/runs"
+                            def ceWorkflowApi = "https://api.github.com/repos/fit2-zhao/actions/workflows/build-and-push-x.yml/dispatches"
+                            def ceRepoApi = "https://api.github.com/repos/fit2-zhao/actions/runs"
 
                             // 触发社区版构建工作流
                             echo "开始触发构建工作流..."
                             def ceResponse = sh(script: """
-                                               curl -X POST -H "Authorization: Bearer $TOKEN" \\
-                                                    -H "Accept: application/vnd.github.v3+json" \\
-                                                    ${ceWorkflowApi} \\
-                                                    -d '{ "ref":"main", "inputs":{"dockerImageTag":"${RELEASE}", "architecture":"${ARCHITECTURE}", "csBranch":"${BRANCH}"}}'
-                                             """, returnStatus: true)
-
+                                curl -X POST -H "Authorization: Bearer $TOKEN" \\
+                                     -H "Accept: application/vnd.github.v3+json" \\
+                                     ${ceWorkflowApi} \\
+                                     -d '{ "ref":"main", "inputs":{"dockerImageTag":"${RELEASE}", "architecture":"${ARCHITECTURE}", "csBranch":"${BRANCH}"}}'
+                            """, returnStatus: true)
 
                             if (ceResponse != 0) {
                                 error "镜像构建工作流触发失败"
@@ -62,28 +61,38 @@ pipeline {
 
                             echo "镜像构建工作流触发成功，开始监控执行状态..."
 
+                            // 创建唯一标识符（例如：Git Commit Hash 或者生成 UUID）
+                            def uniqueBuildId = "${RELEASE}-${ARCHITECTURE}-${BRANCH}".replaceAll("\\W", "_")
+
                             // 检查社区版工作流状态
                             def ceBuildSuccess = false
                             timeout(time: 80, unit: 'MINUTES') {
                                 waitUntil {
                                     sleep(time: 10, unit: 'SECONDS')
-                                    def statusJson = sh(script: '''
+                                    def statusJson = sh(script: """
                                         curl -s -H "Authorization: Bearer $TOKEN" \
-                                        "''' + ceRepoApi + '''?event=workflow_dispatch&per_page=1"
-                                    ''', returnStdout: true).trim()
+                                        "${ceRepoApi}?event=workflow_dispatch&per_page=100"
+                                    """, returnStdout: true).trim()
 
-                                    def status = sh(script: "echo '$statusJson' | grep -oP '\"status\": \"\\K[^\"]+' || echo 'unknown'", returnStdout: true).trim()
-                                    def conclusion = sh(script: "echo '$statusJson' | grep -oP '\"conclusion\": \"\\K[^\"]+' || echo 'unknown'", returnStdout: true).trim()
+                                    // 获取所有的工作流状态
+                                    def runs = readJSON(text: statusJson)
+                                    def matchingRun = runs.find { it.event == "workflow_dispatch" && it.head_branch == "${BRANCH}" && it.head_sha == "${RELEASE}" }
 
-                                    echo "工作流当前状态: ${status}"
+                                    // 如果有匹配的构建
+                                    if (matchingRun) {
+                                        def status = matchingRun.status
+                                        def conclusion = matchingRun.conclusion
 
-                                    if (status == "completed") {
-                                        if (conclusion == "success") {
-                                            echo "构建工作流执行成功!"
-                                            ceBuildSuccess = true
-                                            return true
-                                        } else {
-                                            error "构建工作流执行失败"
+                                        echo "工作流当前状态: ${status}"
+
+                                        if (status == "completed") {
+                                            if (conclusion == "success") {
+                                                echo "构建工作流执行成功!"
+                                                ceBuildSuccess = true
+                                                return true
+                                            } else {
+                                                error "构建工作流执行失败"
+                                            }
                                         }
                                     }
 
