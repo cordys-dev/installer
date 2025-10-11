@@ -246,7 +246,7 @@ pipeline {
         }
 
         // 阶段7：上传离线安装包到OSS
-        stage('Upload') {
+        stage('Upload for AMD64') {
              when {
                 expression {
                     return env.ARCH ==~ /^x86.*/
