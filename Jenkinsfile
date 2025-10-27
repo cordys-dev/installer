@@ -159,7 +159,7 @@ pipeline {
                             ).trim()
 
                             // 提取 upload_url
-                            def uploadUrl = createReleaseResponse.split('"upload_url":')[1].split('"')[1].replaceAll("\\{\\?name,label\\}", "")
+                           /*  def uploadUrl = createReleaseResponse.split('"upload_url":')[1].split('"')[1].replaceAll("\\{\\?name,label\\}", "")
                             echo "Upload URL: ${uploadUrl}"
 
                             // 上传附件
@@ -169,7 +169,7 @@ pipeline {
                                     -H "Content-Type: application/octet-stream" \
                                     --data-binary @cordys-crm-ce-online-installer-${RELEASE}.tar.gz \
                                     "${uploadUrl}?name=cordys-crm-ce-online-installer-${RELEASE}.tar.gz"
-                            """
+                            """ */
                         }
                     }
                 }
