@@ -15,5 +15,8 @@ services:
       timeout: 10s
       retries: 50
     restart: always
+    volumes:
+      - ${CORDYS_BASE}/cordys/logs/mcp-server:/opt/cordys/logs/mcp-server
+
     networks:
       - cordys-network
