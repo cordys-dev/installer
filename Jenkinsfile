@@ -153,7 +153,7 @@ pipeline {
                                             "draft": false,
                                             "prerelease": true
                                         }' \
-                                        https://api.github.com/repos/cordys-dev/cordys-crm/releases
+                                        https://api.github.com/repos/1Panel-dev/CordysCRM/releases
                                 """,
                                 returnStdout: true
                             ).trim()
