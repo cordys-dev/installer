@@ -132,7 +132,7 @@ pipeline {
         stage('Release and Upload Asset') {
             when {
                 expression {
-                    return env.ARCH ==~ /^test.*/
+                    return env.ARCH ==~ /^x86.*/
                 }
             }
             steps {
