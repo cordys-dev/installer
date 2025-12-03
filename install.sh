@@ -79,12 +79,16 @@
       chmod 754 /etc/systemd/system/docker.service
       log "正在启动 Docker 服务..."
       service docker start 2>&1 | tee -a "${__current_dir}/install.log"
+      log "... 设置 docker 开机自启动"
+      systemctl enable docker 2>&1 | tee -a ${__current_dir}/install.log
     else
       log "正在在线安装 Docker..."
       curl -fsSL https://resource.fit2cloud.com/get-docker-linux.sh -o get-docker.sh 2>&1 | tee -a "${__current_dir}/install.log"
       sudo sh get-docker.sh 2>&1 | tee -a "${__current_dir}/install.log"
       log "正在启动 Docker 服务..."
       service docker start 2>&1 | tee -a "${__current_dir}/install.log"
+      log "... 设置 docker 开机自启动"
+      systemctl enable docker 2>&1 | tee -a ${__current_dir}/install.log
     fi
   fi
 
