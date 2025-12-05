@@ -31,6 +31,7 @@ pipeline {
                     echo "BRANCH=${BRANCH}"
                     echo "ARCH=${ARCH}"
                     echo "ARCHITECTURE=${ARCHITECTURE}"
+                    echo "OVERRIDE=${OVERRIDE}"
                 }
             }
         }
@@ -52,7 +53,7 @@ pipeline {
                                                curl -X POST -H "Authorization: Bearer $TOKEN" \\
                                                     -H "Accept: application/vnd.github.v3+json" \\
                                                     ${ceWorkflowApi} \\
-                                                    -d '{ "ref":"main", "inputs":{"dockerImageTag":"${RELEASE}", "architecture":"${ARCHITECTURE}", "csBranch":"${BRANCH}"}}'
+                                                    -d '{ "ref":"main", "inputs":{"dockerImageTag":"${RELEASE}", "architecture":"${ARCHITECTURE}", "csBranch":"${BRANCH}" , "isOverride":"${OVERRIDE}" } }'
                                              """, returnStatus: true)
 
 
@@ -132,7 +133,7 @@ pipeline {
         stage('Release and Upload Asset') {
             when {
                 expression {
-                    return env.ARCH ==~ /^x86.*/
+                    return env.ARCH ==~ /^x86.*/ && env.OVERRIDE == "false"
                 }
             }
             steps {
@@ -157,19 +158,6 @@ pipeline {
                                 """,
                                 returnStdout: true
                             ).trim()
-
-                            // 提取 upload_url
-                           /*  def uploadUrl = createReleaseResponse.split('"upload_url":')[1].split('"')[1].replaceAll("\\{\\?name,label\\}", "")
-                            echo "Upload URL: ${uploadUrl}"
-
-                            // 上传附件
-                            sh """
-                                curl -sSL -X POST \
-                                    -H "Authorization: Bearer ${TOKEN}" \
-                                    -H "Content-Type: application/octet-stream" \
-                                    --data-binary @cordys-crm-ce-online-installer-${RELEASE}.tar.gz \
-                                    "${uploadUrl}?name=cordys-crm-ce-online-installer-${RELEASE}.tar.gz"
-                            """ */
                         }
                     }
                 }
