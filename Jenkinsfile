@@ -49,13 +49,19 @@ pipeline {
 
                             // 触发社区版构建工作流
                             echo "开始触发构建工作流..."
+
+                            def lastVersion = sh(script: """
+                                               curl https://api.github.com/repos/1Panel-dev/CordysCRM/commits/main | jq -r '.sha[:7]'
+                                                """, returnStdout: true).trim()
+
+                            echo "本次构建的版本号为: ${lastVersion}"
+
                             def ceResponse = sh(script: """
                                                curl -X POST -H "Authorization: Bearer $TOKEN" \\
                                                     -H "Accept: application/vnd.github.v3+json" \\
                                                     ${ceWorkflowApi} \\
                                                     -d '{ "ref":"main", "inputs":{"dockerImageTag":"${RELEASE}", "architecture":"${ARCHITECTURE}", "csBranch":"${BRANCH}" , "isOverride":"${OVERRIDE}" } }'
                                              """, returnStatus: true)
-
 
                             if (ceResponse != 0) {
                                 error "镜像构建工作流触发失败"
