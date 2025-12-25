@@ -50,9 +50,16 @@ pipeline {
                             // 触发社区版构建工作流
                             echo "开始触发构建工作流..."
 
-                            def lastVersion = sh(script: """
-                                               curl https://api.github.com/repos/1Panel-dev/CordysCRM/commits/main | jq -r '.sha[:7]'
-                                                """, returnStdout: true).trim()
+                            def lastVersion = sh(
+                                script: """
+                                  curl -s \
+                                    -H "Authorization: Bearer ${TOKEN}" \\
+                                    -H "Accept: application/vnd.github.v3+json" \\
+                                    https://api.github.com/repos/1Panel-dev/CordysCRM/commits/main \\
+                                  | grep '"sha"' | head -1 | cut -d '"' -f 4 | cut -c 1-7
+                                """,
+                                returnStdout: true
+                            ).trim()
 
                             echo "本次构建的版本号为: ${lastVersion}"
 
