@@ -116,6 +116,7 @@ pipeline {
                 dir('installer') {
                     sh script: """
                         # 清理当前工作空间
+                        #!/bin/bash
                         shopt -s extglob
                         rm -rf !(conf)
                         shopt -u extglob
@@ -136,6 +137,7 @@ pipeline {
             steps {
                 dir('installer') {
                    sh script: """
+                            #!/bin/bash
                             tar --transform "s|^|cordys-crm-ce-online-installer-${RELEASE}/|" \\
                                 -czvf cordys-crm-ce-online-installer-${RELEASE}.tar.gz -C conf .
                    """
