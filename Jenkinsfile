@@ -37,78 +37,78 @@ pipeline {
         }
 
         // 阶段2：触发 GitHub Actions 构建镜像
-//         stage('Trigger GitHub Actions') {
-//             steps {
-//                 // 使用GitHub Token进行身份验证
-//                     withCredentials([string(credentialsId: 'ZY-GITHUB-TOKEN', variable: 'TOKEN')]) {
-//                         withEnv(["TOKEN=$TOKEN"]) {
-//                         script {
-//                             // 社区版API端点
-//                             def ceWorkflowApi = "https://api.github.com/repos/fit2-zhao/actions/actions/workflows/build-and-push-x.yml/dispatches"
-//                             def ceRepoApi = "https://api.github.com/repos/fit2-zhao/actions/actions/runs"
-//
-//                             // 触发社区版构建工作流
-//                             echo "开始触发构建工作流..."
-//
-//                             def lastVersion = sh(
-//                                 script: """
-//                                   curl -s \
-//                                     -H "Authorization: Bearer ${TOKEN}" \\
-//                                     -H "Accept: application/vnd.github.v3+json" \\
-//                                     https://api.github.com/repos/1Panel-dev/CordysCRM/commits/main \\
-//                                   | grep '"sha"' | head -1 | cut -d '"' -f 4 | cut -c 1-7
-//                                 """,
-//                                 returnStdout: true
-//                             ).trim()
-//
-//                             echo "本次构建的版本号为: ${lastVersion}"
-//
-//                             def ceResponse = sh(script: """
-//                                                curl -X POST -H "Authorization: Bearer $TOKEN" \\
-//                                                     -H "Accept: application/vnd.github.v3+json" \\
-//                                                     ${ceWorkflowApi} \\
-//                                                     -d '{ "ref":"main", "inputs":{"dockerImageTag":"${RELEASE}", "architecture":"${ARCHITECTURE}", "csBranch":"${BRANCH}" , "isOverride":"${OVERRIDE}" } }'
-//                                              """, returnStatus: true)
-//
-//                             if (ceResponse != 0) {
-//                                 error "镜像构建工作流触发失败"
-//                             }
-//
-//                             echo "镜像构建工作流触发成功，开始监控执行状态..."
-//
-//                             // 检查社区版工作流状态
-//                             def ceBuildSuccess = false
-//                             timeout(time: 80, unit: 'MINUTES') {
-//                                 waitUntil {
-//                                     sleep(time: 10, unit: 'SECONDS')
-//                                     def statusJson = sh(script: '''
-//                                         curl -s -H "Authorization: Bearer $TOKEN" \
-//                                         "''' + ceRepoApi + '''?event=workflow_dispatch&per_page=1"
-//                                     ''', returnStdout: true).trim()
-//
-//                                     def status = sh(script: "echo '$statusJson' | grep -oP '\"status\": \"\\K[^\"]+' || echo 'unknown'", returnStdout: true).trim()
-//                                     def conclusion = sh(script: "echo '$statusJson' | grep -oP '\"conclusion\": \"\\K[^\"]+' || echo 'unknown'", returnStdout: true).trim()
-//
-//                                     echo "工作流当前状态: ${status}"
-//
-//                                     if (status == "completed") {
-//                                         if (conclusion == "success") {
-//                                             echo "构建工作流执行成功!"
-//                                             ceBuildSuccess = true
-//                                             return true
-//                                         } else {
-//                                             error "构建工作流执行失败"
-//                                         }
-//                                     }
-//
-//                                     return false
-//                                 }
-//                             }
-//                         }
-//                     }
-//                 }
-//             }
-//         }
+        stage('Trigger GitHub Actions') {
+            steps {
+                // 使用GitHub Token进行身份验证
+                    withCredentials([string(credentialsId: 'ZY-GITHUB-TOKEN', variable: 'TOKEN')]) {
+                        withEnv(["TOKEN=$TOKEN"]) {
+                        script {
+                            // 社区版API端点
+                            def ceWorkflowApi = "https://api.github.com/repos/fit2-zhao/actions/actions/workflows/build-and-push-x.yml/dispatches"
+                            def ceRepoApi = "https://api.github.com/repos/fit2-zhao/actions/actions/runs"
+
+                            // 触发社区版构建工作流
+                            echo "开始触发构建工作流..."
+
+                            def lastVersion = sh(
+                                script: """
+                                  curl -s \
+                                    -H "Authorization: Bearer ${TOKEN}" \\
+                                    -H "Accept: application/vnd.github.v3+json" \\
+                                    https://api.github.com/repos/1Panel-dev/CordysCRM/commits/main \\
+                                  | grep '"sha"' | head -1 | cut -d '"' -f 4 | cut -c 1-7
+                                """,
+                                returnStdout: true
+                            ).trim()
+
+                            echo "本次构建的版本号为: ${lastVersion}"
+
+                            def ceResponse = sh(script: """
+                                               curl -X POST -H "Authorization: Bearer $TOKEN" \\
+                                                    -H "Accept: application/vnd.github.v3+json" \\
+                                                    ${ceWorkflowApi} \\
+                                                    -d '{ "ref":"main", "inputs":{"dockerImageTag":"${RELEASE}", "architecture":"${ARCHITECTURE}", "csBranch":"${BRANCH}" , "isOverride":"${OVERRIDE}" } }'
+                                             """, returnStatus: true)
+
+                            if (ceResponse != 0) {
+                                error "镜像构建工作流触发失败"
+                            }
+
+                            echo "镜像构建工作流触发成功，开始监控执行状态..."
+
+                            // 检查社区版工作流状态
+                            def ceBuildSuccess = false
+                            timeout(time: 80, unit: 'MINUTES') {
+                                waitUntil {
+                                    sleep(time: 10, unit: 'SECONDS')
+                                    def statusJson = sh(script: '''
+                                        curl -s -H "Authorization: Bearer $TOKEN" \
+                                        "''' + ceRepoApi + '''?event=workflow_dispatch&per_page=1"
+                                    ''', returnStdout: true).trim()
+
+                                    def status = sh(script: "echo '$statusJson' | grep -oP '\"status\": \"\\K[^\"]+' || echo 'unknown'", returnStdout: true).trim()
+                                    def conclusion = sh(script: "echo '$statusJson' | grep -oP '\"conclusion\": \"\\K[^\"]+' || echo 'unknown'", returnStdout: true).trim()
+
+                                    echo "工作流当前状态: ${status}"
+
+                                    if (status == "completed") {
+                                        if (conclusion == "success") {
+                                            echo "构建工作流执行成功!"
+                                            ceBuildSuccess = true
+                                            return true
+                                        } else {
+                                            error "构建工作流执行失败"
+                                        }
+                                    }
+
+                                    return false
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
 
         // 阶段3：修改安装配置文件
         stage('Modify install conf') {
