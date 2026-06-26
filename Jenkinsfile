@@ -181,10 +181,15 @@ pipeline {
             steps {
                 dir('installer') {
                     script {
+                    withCredentials([usernamePassword(credentialsId: 'harbor-developer',
+                                                                     usernameVariable: 'USERNAME',
+                                                                     passwordVariable: 'PASSWORD')]) {
+                                        def registryServer = "registry.fit2cloud.com"
+
+                                        sh "docker login -u ${USERNAME} -p ${PASSWORD} ${registryServer}"
+                                    }
                         // 定义需要拉取的Docker镜像列表
-                        def images = [
-                                    "cordys-crm:${RELEASE}"
-                                    ]
+                        def images = ["cordys-crm:${RELEASE}"]
                         // 拉取所有需要的Docker镜像
                         for (image in images) {
                             waitUntil {
