@@ -37,7 +37,7 @@ jobs:
       # 使用 skopeo 将远端镜像复制到本地 docker daemon
       - name: Copy image into local docker daemon with skopeo
         env:
-          SRC: ${{ secrets.FIT2CLOUD_REGISTRY_HOST }}/cordys/cordys-crm:${{ env.TAG }}
+          SRC: ${{ secrets.FIT2CLOUD_REGISTRY_HOST }}/cordys/cordys-crm-ee:${{ env.TAG }}
           DEST_DAEMON: ${{ secrets.DOCKERHUB_USERNAME }}/cordys-crm:${{ env.TAG }}
           SRC_USER: ${{ secrets.FIT2CLOUD_REGISTRY_USERNAME }}
           SRC_PASSWORD: ${{ secrets.FIT2CLOUD_REGISTRY_PASSWORD }}
