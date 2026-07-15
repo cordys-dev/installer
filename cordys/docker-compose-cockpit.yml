@@ -5,12 +5,15 @@ services:
     
     entrypoint: [ "/shells/start-cockpit.sh" ]
     environment:
+      SPRING_DATA_REDIS_HOST: ${CORDYS_REDIS_HOST}
+      SPRING_DATA_REDIS_PORT: ${CORDYS_REDIS_PORT}
+      SPRING_DATA_REDIS_PASSWORD: ${CORDYS_REDIS_PASSWORD}
       CORDYS_CRM_URL: http://${CORDYS_SERVER_HOST}:${CORDYS_SERVER_PORT}
 
     ports:
       - ${CORDYS_COCKPIT_PORT}:8088
     healthcheck:
-      test: [ "CMD", "bash", "-c", "< /dev/tcp/localhost/8082" ]
+      test: [ "CMD", "bash", "-c", "< /dev/tcp/localhost/8088" ]
       interval: 6s
       timeout: 10s
       retries: 50
