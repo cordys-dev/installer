@@ -224,17 +224,37 @@ function restart() {
 function reload() {
   echo
   cd ${CORDYS_BASE}/cordys
-  echo "=== 重新加载服务 ==="
 
-  # Docker Compose up 按 depends_on 顺序启动: mysql/redis -> cordys -> mcp/cockpit
-  docker-compose ${COMPOSE_FILES} up -d --remove-orphans
+  # --no-deps 逐层启动，输出重定向掉预期内的 orphan 警告
 
-  # compose 文件中 cockpit 的 depends_on 是 cordys，不依赖 mcp
-  # 当 mcp 为内部服务时，需确保 cockpit 在 mcp 就绪后才真正可用
-  if [ "${CORDYS_MCP_EXTERNAL_SERVER}" = "false" ] && [ "${CORDYS_COCKPIT_EXTERNAL_SERVER}" = "false" ]; then
+  # 第一层: MySQL 和 Redis
+  if [ "${CORDYS_EXTERNAL_MYSQL}" = "false" ]; then
+    echo ">>> 启动 MySQL..."
+    docker-compose ${COMPOSE_FILES} up -d --no-deps mysql 2>/dev/null
+    wait_for_healthy mysql
+  fi
+  if [ "${CORDYS_EXTERNAL_REDIS}" = "false" ]; then
+    echo ">>> 启动 Redis..."
+    docker-compose ${COMPOSE_FILES} up -d --no-deps redis 2>/dev/null
+    wait_for_healthy redis
+  fi
+
+  # 第二层: Cordys CRM
+  echo ">>> 启动 Cordys CRM..."
+  docker-compose ${COMPOSE_FILES} up -d --no-deps cordys 2>/dev/null
+  wait_for_healthy cordys-crm
+
+  # 第三层: MCP Server
+  if [ "${CORDYS_MCP_EXTERNAL_SERVER}" = "false" ]; then
+    echo ">>> 启动 MCP Server..."
+    docker-compose ${COMPOSE_FILES} up -d --no-deps cordys_mcp 2>/dev/null
     wait_for_healthy cordys-crm-mcp-server
-    echo ">>> 重启 Cockpit 以确保在 MCP 之后启动..."
-    docker-compose ${COMPOSE_FILES} restart cordys_cockpit
+  fi
+
+  # 第四层: Cockpit
+  if [ "${CORDYS_COCKPIT_EXTERNAL_SERVER}" = "false" ]; then
+    echo ">>> 启动 Cockpit..."
+    docker-compose ${COMPOSE_FILES} up -d --no-deps cordys_cockpit 2>/dev/null
   fi
 
   echo "=== 加载完成 ==="
