@@ -2,8 +2,11 @@ services:
   cordys_mcp:
     image: ${CORDYS_IMAGE_PREFIX}/${CORDYS_IMAGE_NAME}:${CORDYS_IMAGE_TAG}
     container_name: cordys-crm-mcp-server
-    
+
     entrypoint: [ "/shells/start-mcp.sh" ]
+    depends_on:
+      cordys:
+        condition: service_healthy
     environment:
       CORDYS_CRM_URL: http://${CORDYS_SERVER_HOST}:${CORDYS_SERVER_PORT}
 
@@ -21,8 +24,3 @@ services:
 
     networks:
       - cordys-network
-
-  cordys_cockpit:
-    depends_on:
-      cordys_mcp:
-        condition: service_healthy

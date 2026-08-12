@@ -4,6 +4,9 @@ services:
     container_name: cordys-crm-cockpit
 
     entrypoint: [ "/shells/start-cockpit.sh" ]
+    depends_on:
+      cordys:
+        condition: service_healthy
     environment:
       SPRING_DATA_REDIS_HOST: ${CORDYS_REDIS_HOST}
       SPRING_DATA_REDIS_PORT: ${CORDYS_REDIS_PORT}

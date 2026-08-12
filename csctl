@@ -42,14 +42,14 @@ function generate_compose_files() {
     compose_files="${compose_files} -f docker-compose-redis.yml"
   fi
 
-  # 是否使用外部 MCP 服务
-  if [ "${CORDYS_MCP_EXTERNAL_SERVER}" = "false" ]; then
-    compose_files="${compose_files} -f docker-compose-mcp.yml"
-  fi
-
   # 是否使用外部 Cockpit 服务
   if [ "${CORDYS_COCKPIT_EXTERNAL_SERVER}" = "false" ]; then
     compose_files="${compose_files} -f docker-compose-cockpit.yml"
+  fi
+
+  # 是否使用外部 MCP 服务
+  if [ "${CORDYS_MCP_EXTERNAL_SERVER}" = "false" ]; then
+    compose_files="${compose_files} -f docker-compose-mcp.yml"
   fi
 
   echo ${compose_files} >${CORDYS_BASE}/cordys/compose_files
@@ -232,7 +232,20 @@ function restart() {
 function reload() {
   echo
   cd ${CORDYS_BASE}/cordys
+  echo "=== 重新加载服务 ==="
+
+  # Docker Compose up 按 depends_on 顺序启动: mysql/redis -> cordys -> mcp/cockpit
   docker-compose ${COMPOSE_FILES} up -d --remove-orphans
+
+  # compose 文件中 cockpit 的 depends_on 是 cordys，不依赖 mcp
+  # 当 mcp 为内部服务时，需确保 cockpit 在 mcp 就绪后才真正可用
+  if [ "${CORDYS_MCP_EXTERNAL_SERVER}" = "false" ] && [ "${CORDYS_COCKPIT_EXTERNAL_SERVER}" = "false" ]; then
+    wait_for_healthy cordys-crm-mcp-server
+    echo ">>> 重启 Cockpit 以确保在 MCP 之后启动..."
+    docker-compose ${COMPOSE_FILES} restart cordys_cockpit
+  fi
+
+  echo "=== 加载完成 ==="
 }
 function uninstall() {
   echo

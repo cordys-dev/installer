@@ -26,13 +26,3 @@ services:
       - ${CORDYS_BASE}/cordys/logs/cordys-crm:/opt/cordys/logs/cordys-crm
     networks:
       - cordys-network
-
-  cordys_mcp:
-    depends_on:
-      cordys:
-        condition: service_healthy
-
-  cordys_cockpit:
-    depends_on:
-      cordys:
-        condition: service_healthy
