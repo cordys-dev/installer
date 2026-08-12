@@ -21,3 +21,8 @@ services:
 
     networks:
       - cordys-network
+
+  cordys_cockpit:
+    depends_on:
+      cordys_mcp:
+        condition: service_healthy

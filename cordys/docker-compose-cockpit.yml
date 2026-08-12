@@ -1,0 +1,26 @@
+services:
+  cordys_cockpit:
+    image: ${CORDYS_IMAGE_PREFIX}/${CORDYS_IMAGE_NAME}:${CORDYS_IMAGE_TAG}
+    container_name: cordys-crm-cockpit
+
+    entrypoint: [ "/shells/start-cockpit.sh" ]
+    environment:
+      SPRING_DATA_REDIS_HOST: ${CORDYS_REDIS_HOST}
+      SPRING_DATA_REDIS_PORT: ${CORDYS_REDIS_PORT}
+      SPRING_DATA_REDIS_PASSWORD: ${CORDYS_REDIS_PASSWORD}
+      CORDYS_CRM_URL: http://${CORDYS_SERVER_HOST}:${CORDYS_SERVER_PORT}
+
+    ports:
+      - ${CORDYS_COCKPIT_SERVER_PORT}:8088
+    healthcheck:
+      test: [ "CMD", "bash", "-c", "< /dev/tcp/localhost/8088" ]
+      interval: 6s
+      timeout: 10s
+      retries: 50
+    restart: always
+    volumes:
+      - ${CORDYS_BASE}/cordys/conf:/opt/cordys/conf
+      - ${CORDYS_BASE}/cordys/logs/cockpit:/opt/cordys/logs/cockpit
+
+    networks:
+      - cordys-network

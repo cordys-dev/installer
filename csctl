@@ -47,6 +47,11 @@ function generate_compose_files() {
     compose_files="${compose_files} -f docker-compose-mcp.yml"
   fi
 
+  # 是否使用外部 Cockpit 服务
+  if [ "${CORDYS_COCKPIT_EXTERNAL_SERVER}" = "false" ]; then
+    compose_files="${compose_files} -f docker-compose-cockpit.yml"
+  fi
+
   echo ${compose_files} >${CORDYS_BASE}/cordys/compose_files
   chmod 777 -R ${CORDYS_BASE}/cordys/logs/cordys-crm
   chmod +rw -R ${CORDYS_BASE}/cordys/conf
@@ -59,21 +64,170 @@ function status() {
   cd ${CORDYS_BASE}/cordys
   docker-compose ${COMPOSE_FILES} ps
 }
+# 等待容器健康检查通过
+function wait_for_healthy() {
+  local container_name=$1
+  local max_wait=${2:-120}
+  local waited=0
+  echo -n "  等待 ${container_name} 就绪..."
+  while [ $waited -lt $max_wait ]; do
+    local status=$(docker inspect --format='{{.State.Health.Status}}' ${container_name} 2>/dev/null || echo "")
+    if [ "$status" = "healthy" ]; then
+      echo " OK"
+      return 0
+    fi
+    sleep 2
+    waited=$((waited + 2))
+  done
+  echo " 超时"
+  return 1
+}
+
 function start() {
   echo
   cd ${CORDYS_BASE}/cordys
-  docker-compose ${COMPOSE_FILES} start ${target}
+  if [ -n "${target}" ]; then
+    docker-compose ${COMPOSE_FILES} start ${target}
+    return
+  fi
+
+  echo "=== 按依赖顺序启动服务 (mysql/redis -> cordys -> mcp -> cockpit) ==="
+
+  # 第一层: MySQL 和 Redis (可并行，但顺序启动以便观察)
+  if [ "${CORDYS_EXTERNAL_MYSQL}" = "false" ]; then
+    echo ">>> 启动 MySQL..."
+    docker-compose ${COMPOSE_FILES} start mysql
+    wait_for_healthy mysql
+  fi
+  if [ "${CORDYS_EXTERNAL_REDIS}" = "false" ]; then
+    echo ">>> 启动 Redis..."
+    docker-compose ${COMPOSE_FILES} start redis
+    wait_for_healthy redis
+  fi
+
+  # 第二层: Cordys CRM
+  echo ">>> 启动 Cordys CRM..."
+  docker-compose ${COMPOSE_FILES} start cordys
+  wait_for_healthy cordys-crm
+
+  # 第三层: MCP Server
+  if [ "${CORDYS_MCP_EXTERNAL_SERVER}" = "false" ]; then
+    echo ">>> 启动 MCP Server..."
+    docker-compose ${COMPOSE_FILES} start cordys_mcp
+    wait_for_healthy cordys-crm-mcp-server
+  fi
+
+  # 第四层: Cockpit
+  if [ "${CORDYS_COCKPIT_EXTERNAL_SERVER}" = "false" ]; then
+    echo ">>> 启动 Cockpit..."
+    docker-compose ${COMPOSE_FILES} start cordys_cockpit
+  fi
+
+  echo "=== 启动完成 ==="
 }
+
 function stop() {
   echo
   cd ${CORDYS_BASE}/cordys
-  docker-compose ${COMPOSE_FILES} stop ${target}
+  if [ -n "${target}" ]; then
+    docker-compose ${COMPOSE_FILES} stop ${target}
+    return
+  fi
+
+  echo "=== 按逆依赖顺序停止服务 (cockpit -> mcp -> cordys -> redis/mysql) ==="
+
+  # 先停止上层服务，避免依赖断开报错
+  if [ "${CORDYS_COCKPIT_EXTERNAL_SERVER}" = "false" ]; then
+    echo ">>> 停止 Cockpit..."
+    docker-compose ${COMPOSE_FILES} stop cordys_cockpit
+  fi
+
+  if [ "${CORDYS_MCP_EXTERNAL_SERVER}" = "false" ]; then
+    echo ">>> 停止 MCP Server..."
+    docker-compose ${COMPOSE_FILES} stop cordys_mcp
+  fi
+
+  echo ">>> 停止 Cordys CRM..."
+  docker-compose ${COMPOSE_FILES} stop cordys
+
+  if [ "${CORDYS_EXTERNAL_REDIS}" = "false" ]; then
+    echo ">>> 停止 Redis..."
+    docker-compose ${COMPOSE_FILES} stop redis
+  fi
+
+  if [ "${CORDYS_EXTERNAL_MYSQL}" = "false" ]; then
+    echo ">>> 停止 MySQL..."
+    docker-compose ${COMPOSE_FILES} stop mysql
+  fi
+
+  echo "=== 停止完成 ==="
 }
+
 function restart() {
   echo
   cd ${CORDYS_BASE}/cordys
-  docker-compose ${COMPOSE_FILES} stop ${target}
-  docker-compose ${COMPOSE_FILES} start ${target}
+  if [ -n "${target}" ]; then
+    docker-compose ${COMPOSE_FILES} stop ${target}
+    docker-compose ${COMPOSE_FILES} start ${target}
+    return
+  fi
+
+  echo "=== 按逆依赖顺序停止服务 ==="
+
+  # 逆序停止
+  if [ "${CORDYS_COCKPIT_EXTERNAL_SERVER}" = "false" ]; then
+    echo ">>> 停止 Cockpit..."
+    docker-compose ${COMPOSE_FILES} stop cordys_cockpit
+  fi
+
+  if [ "${CORDYS_MCP_EXTERNAL_SERVER}" = "false" ]; then
+    echo ">>> 停止 MCP Server..."
+    docker-compose ${COMPOSE_FILES} stop cordys_mcp
+  fi
+
+  echo ">>> 停止 Cordys CRM..."
+  docker-compose ${COMPOSE_FILES} stop cordys
+
+  if [ "${CORDYS_EXTERNAL_REDIS}" = "false" ]; then
+    echo ">>> 停止 Redis..."
+    docker-compose ${COMPOSE_FILES} stop redis
+  fi
+
+  if [ "${CORDYS_EXTERNAL_MYSQL}" = "false" ]; then
+    echo ">>> 停止 MySQL..."
+    docker-compose ${COMPOSE_FILES} stop mysql
+  fi
+
+  echo "=== 按依赖顺序启动服务 (mysql/redis -> cordys -> mcp -> cockpit) ==="
+
+  # 正序启动
+  if [ "${CORDYS_EXTERNAL_MYSQL}" = "false" ]; then
+    echo ">>> 启动 MySQL..."
+    docker-compose ${COMPOSE_FILES} start mysql
+    wait_for_healthy mysql
+  fi
+  if [ "${CORDYS_EXTERNAL_REDIS}" = "false" ]; then
+    echo ">>> 启动 Redis..."
+    docker-compose ${COMPOSE_FILES} start redis
+    wait_for_healthy redis
+  fi
+
+  echo ">>> 启动 Cordys CRM..."
+  docker-compose ${COMPOSE_FILES} start cordys
+  wait_for_healthy cordys-crm
+
+  if [ "${CORDYS_MCP_EXTERNAL_SERVER}" = "false" ]; then
+    echo ">>> 启动 MCP Server..."
+    docker-compose ${COMPOSE_FILES} start cordys_mcp
+    wait_for_healthy cordys-crm-mcp-server
+  fi
+
+  if [ "${CORDYS_COCKPIT_EXTERNAL_SERVER}" = "false" ]; then
+    echo ">>> 启动 Cockpit..."
+    docker-compose ${COMPOSE_FILES} start cordys_cockpit
+  fi
+
+  echo "=== 重启完成 ==="
 }
 function reload() {
   echo

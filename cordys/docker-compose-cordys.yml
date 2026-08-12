@@ -31,3 +31,8 @@ services:
     depends_on:
       cordys:
         condition: service_healthy
+
+  cordys_cockpit:
+    depends_on:
+      cordys:
+        condition: service_healthy
