@@ -59,10 +59,12 @@ pipeline {
                             ''', returnStdout: true).trim()
                         }
 
-                        def runId = new groovy.json.JsonSlurperClassic().parseText(dispatchResponse).workflow_run_id?.toString()
-                        if (!(runId ==~ /[0-9]+/)) {
+                        def runIdMatch = dispatchResponse =~ /"workflow_run_id"\s*:\s*([0-9]+)/
+                        if (!runIdMatch.find()) {
                             error '触发响应没有工作流运行 ID，无法监控本次构建'
                         }
+                        def runId = runIdMatch.group(1)
+                        runIdMatch = null
                         echo "已触发工作流: https://github.com/fit2-zhao/actions/actions/runs/${runId}"
 
                         withEnv(["RUN_ID=${runId}"]) {
@@ -76,12 +78,20 @@ pipeline {
                                             -H "X-GitHub-Api-Version: 2026-03-10" \\
                                             "https://api.github.com/repos/fit2-zhao/actions/actions/runs/$RUN_ID"
                                     ''', returnStdout: true).trim()
-                                    def run = new groovy.json.JsonSlurperClassic().parseText(statusJson)
-                                    echo "工作流 ${runId} 当前状态: ${run.status}"
+                                    def statusMatch = statusJson =~ /"status"\s*:\s*"([^"]+)"/
+                                    if (!statusMatch.find()) {
+                                        error '工作流响应没有状态'
+                                    }
+                                    def status = statusMatch.group(1)
+                                    statusMatch = null
+                                    echo "工作流 ${runId} 当前状态: ${status}"
 
-                                    if (run.status == 'completed') {
-                                        if (run.conclusion != 'success') {
-                                            error "构建工作流执行失败: ${run.conclusion}"
+                                    if (status == 'completed') {
+                                        def conclusionMatch = statusJson =~ /"conclusion"\s*:\s*"([^"]+)"/
+                                        def conclusion = conclusionMatch.find() ? conclusionMatch.group(1) : 'unknown'
+                                        conclusionMatch = null
+                                        if (conclusion != 'success') {
+                                            error "构建工作流执行失败: ${conclusion}"
                                         }
                                         echo '构建工作流执行成功!'
                                         return true
