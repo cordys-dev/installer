@@ -39,68 +39,53 @@ pipeline {
         // 阶段2：触发 GitHub Actions 构建镜像
         stage('Trigger GitHub Actions') {
             steps {
-                // 使用GitHub Token进行身份验证
-                    withCredentials([string(credentialsId: 'ZY-GITHUB-TOKEN', variable: 'TOKEN')]) {
-                        withEnv(["TOKEN=$TOKEN"]) {
-                        script {
-                            // 社区版API端点
-                            def ceWorkflowApi = "https://api.github.com/repos/fit2-zhao/actions/actions/workflows/build-and-push-x.yml/dispatches"
-                            def ceRepoApi = "https://api.github.com/repos/fit2-zhao/actions/actions/runs"
+                withCredentials([string(credentialsId: 'ZY-GITHUB-TOKEN', variable: 'TOKEN')]) {
+                    script {
+                        def payload = groovy.json.JsonOutput.toJson([
+                            ref: 'main',
+                            inputs: [dockerImageTag: env.RELEASE, architecture: env.ARCHITECTURE,
+                                     csBranch: env.BRANCH, isOverride: env.OVERRIDE],
+                            return_run_details: true
+                        ])
+                        def dispatchResponse
+                        withEnv(["DISPATCH_PAYLOAD=${payload}"]) {
+                            dispatchResponse = sh(script: '''
+                                curl --fail --silent --show-error --max-time 30 -X POST \\
+                                    -H "Authorization: Bearer $TOKEN" \\
+                                    -H "Accept: application/vnd.github+json" \\
+                                    -H "X-GitHub-Api-Version: 2026-03-10" \\
+                                    -d "$DISPATCH_PAYLOAD" \\
+                                    https://api.github.com/repos/fit2-zhao/actions/actions/workflows/build-and-push-x.yml/dispatches
+                            ''', returnStdout: true).trim()
+                        }
 
-                            // 触发社区版构建工作流
-                            echo "开始触发构建工作流..."
+                        def runId = new groovy.json.JsonSlurperClassic().parseText(dispatchResponse).workflow_run_id?.toString()
+                        if (!(runId ==~ /[0-9]+/)) {
+                            error '触发响应没有工作流运行 ID，无法监控本次构建'
+                        }
+                        echo "已触发工作流: https://github.com/fit2-zhao/actions/actions/runs/${runId}"
 
-                            def lastVersion = sh(
-                                script: """
-                                  curl -s \
-                                    -H "Authorization: Bearer ${TOKEN}" \\
-                                    -H "Accept: application/vnd.github.v3+json" \\
-                                    https://api.github.com/repos/1Panel-dev/CordysCRM/commits/main \\
-                                  | grep '"sha"' | head -1 | cut -d '"' -f 4 | cut -c 1-7
-                                """,
-                                returnStdout: true
-                            ).trim()
-
-                            echo "本次构建的版本号为: ${lastVersion}"
-
-                            def ceResponse = sh(script: """
-                                               curl -X POST -H "Authorization: Bearer $TOKEN" \\
-                                                    -H "Accept: application/vnd.github.v3+json" \\
-                                                    ${ceWorkflowApi} \\
-                                                    -d '{ "ref":"main", "inputs":{"dockerImageTag":"${RELEASE}", "architecture":"${ARCHITECTURE}", "csBranch":"${BRANCH}" , "isOverride":"${OVERRIDE}" } }'
-                                             """, returnStatus: true)
-
-                            if (ceResponse != 0) {
-                                error "镜像构建工作流触发失败"
-                            }
-
-                            echo "镜像构建工作流触发成功，开始监控执行状态..."
-
-                            // 检查社区版工作流状态
-                            def ceBuildSuccess = false
+                        withEnv(["RUN_ID=${runId}"]) {
                             timeout(time: 80, unit: 'MINUTES') {
                                 waitUntil {
                                     sleep(time: 10, unit: 'SECONDS')
                                     def statusJson = sh(script: '''
-                                        curl -s -H "Authorization: Bearer $TOKEN" \
-                                        "''' + ceRepoApi + '''?event=workflow_dispatch&per_page=1"
+                                        curl --fail --silent --show-error --max-time 30 \\
+                                            -H "Authorization: Bearer $TOKEN" \\
+                                            -H "Accept: application/vnd.github+json" \\
+                                            -H "X-GitHub-Api-Version: 2026-03-10" \\
+                                            "https://api.github.com/repos/fit2-zhao/actions/actions/runs/$RUN_ID"
                                     ''', returnStdout: true).trim()
+                                    def run = new groovy.json.JsonSlurperClassic().parseText(statusJson)
+                                    echo "工作流 ${runId} 当前状态: ${run.status}"
 
-                                    def status = sh(script: "echo '$statusJson' | grep -oP '\"status\": \"\\K[^\"]+' || echo 'unknown'", returnStdout: true).trim()
-                                    def conclusion = sh(script: "echo '$statusJson' | grep -oP '\"conclusion\": \"\\K[^\"]+' || echo 'unknown'", returnStdout: true).trim()
-
-                                    echo "工作流当前状态: ${status}"
-
-                                    if (status == "completed") {
-                                        if (conclusion == "success") {
-                                            echo "构建工作流执行成功!"
-                                            ceBuildSuccess = true
-                                            return true
-                                        } else {
-                                            error "构建工作流执行失败"
+                                    if (run.status == 'completed') {
+                                        if (run.conclusion != 'success') {
+                                            error "构建工作流执行失败: ${run.conclusion}"
                                         }
+                                        echo '构建工作流执行成功!'
+                                        return true
                                     }
-
                                     return false
                                 }
                             }
