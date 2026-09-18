@@ -214,6 +214,7 @@ pipeline {
                        cd ..
 
                         # 添加企业版特有配置
+                        echo >> ./conf/install.conf
                         echo '# 企业版配置' >> ./conf/install.conf
                         echo 'CORDYS_ENTERPRISE_ENABLE=true' >> ./conf/install.conf
                         sed -i -e \"s#CORDYS_IMAGE_NAME=.*#CORDYS_IMAGE_NAME=cordys-crm#g\" ./conf/install.conf
