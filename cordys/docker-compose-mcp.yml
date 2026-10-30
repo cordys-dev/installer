@@ -9,6 +9,7 @@ services:
         condition: service_healthy
     environment:
       CORDYS_CRM_URL: http://${CORDYS_SERVER_HOST}:${CORDYS_SERVER_PORT}
+      TZ: "Asia/Shanghai"
 
     ports:
       - ${CORDYS_MCP_SERVER_PORT}:8082
